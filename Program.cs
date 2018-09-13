@@ -10,6 +10,7 @@ namespace EnableNewSteamFriendsSkin
     {
         static void Main(string[] args)
         {
+            Console.Title = "EnableNewSteamFriendsSkin";
             string cachepath = Path.Combine(Environment.GetEnvironmentVariable("LocalAppData"), "Steam\\htmlcache\\Cache\\");
             Console.WriteLine("Downloading latest friends.css from Steam...");
             byte[] originalcss = getLatestFriendsCSS();
@@ -26,7 +27,7 @@ namespace EnableNewSteamFriendsSkin
             foreach (string s in files)
             {
                 cachefile = File.ReadAllBytes(s);
-                if (IsGZipHeader(cachefile) && cachefile.Length < 65000 && cachefile.Length > 50000)
+                if (IsGZipHeader(cachefile) && cachefile.Length < 80000 && cachefile.Length > 50000)
                 {
                     decompressedcachefile = Decompress(cachefile);
                     if (decompressedcachefile.SequenceEqual(originalcss))
@@ -136,7 +137,7 @@ namespace EnableNewSteamFriendsSkin
                 var regFilePath = registryKey?.GetValue("SteamPath");
                 if (regFilePath != null)
                 {
-                    filePath = System.IO.Path.Combine(regFilePath.ToString().Replace(@"/", @"\"), "skins");
+                    filePath = regFilePath.ToString().Replace(@"/", @"\");
                 }
                 return filePath;
             }
