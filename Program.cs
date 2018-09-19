@@ -15,7 +15,7 @@ namespace EnableNewSteamFriendsSkin
             Console.Title = "EnableNewSteamFriendsSkin";
             string cachepath = Path.Combine(Environment.GetEnvironmentVariable("LocalAppData"), "Steam\\htmlcache\\Cache\\");
             Console.WriteLine("Downloading latest friends.css from Steam...");
-            byte[] originalcss = getLatestFriendsCSS();
+            byte[] originalcss = GetLatestFriendsCSS();
             Console.WriteLine("Download successful.");
             Console.WriteLine("Finding list of possible cache files...");
             string[] files = Directory.GetFiles(cachepath, "f_*");
@@ -122,7 +122,7 @@ namespace EnableNewSteamFriendsSkin
             Environment.Exit(0);
         }
 
-        static string steamDir = FindSteamDir();
+        static readonly string steamDir = FindSteamDir();
 
         static bool IsGZipHeader(byte[] arr)
         {
@@ -173,7 +173,7 @@ namespace EnableNewSteamFriendsSkin
             }
         }
 
-        static byte[] getLatestFriendsCSS()
+        static byte[] GetLatestFriendsCSS()
         {
             Uri LatestURI = new Uri("https://google.com/");
             WebClient downloadFile = new WebClient();
