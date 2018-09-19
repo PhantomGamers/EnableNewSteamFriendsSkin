@@ -5,11 +5,14 @@ using System.IO.Compression;
 using System.Net;
 using System.Diagnostics;
 using System.Threading;
+using System.Runtime.InteropServices;
+
 
 namespace EnableNewSteamFriendsSkin
 {
     class Program
     {
+
         static void Main(string[] args)
         {
             Console.Title = "EnableNewSteamFriendsSkin";
@@ -83,7 +86,16 @@ namespace EnableNewSteamFriendsSkin
 
                         Console.WriteLine("Restarting Steam...");
                         Process.Start(steamDir + "\\Steam.exe");
-                        Thread.Sleep(30000);
+
+                        /*Console.WriteLine("Waiting for friends list to open...");
+                        while (FindWindow("SDL_app", null) == 0)
+                            Thread.Sleep(1000);*/
+
+                        Console.WriteLine("Waiting for cache folder to be created...");
+                        while (!Directory.Exists(cachepath))
+                            Thread.Sleep(1000);
+
+                        Thread.Sleep(5000);
 
                         Console.WriteLine("Restarting EnableNewSteamFriendsSkin...");
                         Process.Start(System.Reflection.Assembly.GetExecutingAssembly().Location);
@@ -195,9 +207,7 @@ namespace EnableNewSteamFriendsSkin
             }
         }
 
-        static void FindCacheFile()
-        {
-            
-        }
+        /*[DllImport("user32.dll", EntryPoint = "FindWindow")]
+        static extern int FindWindow(string lpClassName, string lpWindowName);*/
     }
 }
