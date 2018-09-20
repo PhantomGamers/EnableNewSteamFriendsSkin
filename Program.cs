@@ -5,9 +5,9 @@ using System.IO.Compression;
 using System.Net;
 using System.Diagnostics;
 using System.Threading;
-/*using System.Text.RegularExpressions;
-using System.Collections.Generic;
-using System.Runtime.InteropServices;*/
+using System.Runtime.InteropServices;
+using System.Text.RegularExpressions;
+//using System.Collections.Generic;
 
 
 namespace EnableNewSteamFriendsSkin
@@ -92,7 +92,6 @@ namespace EnableNewSteamFriendsSkin
             }
         }
 
-        /*
         static readonly string steamLang = FindSteamLang();
         static string FindSteamLang()
         {
@@ -109,6 +108,7 @@ namespace EnableNewSteamFriendsSkin
 
         }
 
+        /*
         static readonly string friendsWindow = FindFriendsWindow();
         static string FindFriendsWindow()
         {
@@ -127,10 +127,14 @@ namespace EnableNewSteamFriendsSkin
                 return match;
             else
                 return null;
-        }
+        }*/
 
         [DllImport("user32.dll", EntryPoint = "FindWindow")]
-        static extern int FindWindow(string lpClassName, string lpWindowName);*/
+        static extern int FindWindow(string lpClassName, string lpWindowName);
+        [DllImport("user32.dll", EntryPoint = "SendMessage")]
+        static extern int SendMessage(int hWnd, uint Msg, int wParam, int lParam);
+        const int WM_SYSCOMMAND = 0x0112;
+        const int SC_CLOSE = 0xF060;
 
         static void PromptForExit()
         {
@@ -223,13 +227,16 @@ namespace EnableNewSteamFriendsSkin
                         Console.WriteLine("Restarting Steam...");
                         Process.Start(steamDir + "\\Steam.exe");
 
-                        /*Console.WriteLine("Waiting for friends list to open...");
-                        while (FindWindow("SDL_app", FindFriendsWindow()) == 0)
-                            Thread.Sleep(1000);*/
-
-                        Console.WriteLine("Waiting for cache folder to be created...");
-                        while (!Directory.Exists(cachepath))
+                        Console.WriteLine("Waiting for friends list to open...");
+                        while (FindWindow("SDL_app", friendsString) == 0)
                             Thread.Sleep(1000);
+
+                        if (!Directory.Exists(cachepath))
+                        {
+                            Console.WriteLine("Waiting for cache folder to be created...");
+                            while (!Directory.Exists(cachepath))
+                                Thread.Sleep(1000);
+                        }
 
                         Thread.Sleep(5000);
 
@@ -258,6 +265,18 @@ namespace EnableNewSteamFriendsSkin
             Console.WriteLine("Cleaning up...");
             File.Delete(friendscachefilename);
             File.Delete(friendscachefilename + "-tmp");
+
+            if (Process.GetProcessesByName("Steam").Length > 0)
+            {
+                Console.WriteLine("Trying to reopen friends window...");
+                int iHandle = FindWindow("SDL_app", friendsString);
+                if (iHandle > 0)
+                    SendMessage(iHandle, WM_SYSCOMMAND, SC_CLOSE, 0);
+                else
+                    Console.WriteLine("Can't find friends window.");
+                Process.Start(steamDir + "\\Steam.exe", @"steam://open/friends/");
+            }
+
 
             Console.WriteLine("Finished! Put your custom css in " + steamDir + "\\clientui\\friends.custom.css");
             Console.WriteLine("Close and reopen your Steam friends window to see changes.");
