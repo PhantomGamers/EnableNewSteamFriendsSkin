@@ -140,6 +140,7 @@ namespace EnableNewSteamFriendsSkin
                     {
                         AutoFlush = true
                     };
+                    Console.Title = "Steam Friends Skin Patcher";
                     Console.SetOut(standardOutput);
                 }
                 catch (Exception) { }
