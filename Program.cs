@@ -7,6 +7,8 @@ using System.Diagnostics;
 using System.Threading;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
+using Microsoft.Win32.SafeHandles;
+using System.Text;
 //using System.Collections.Generic;
 
 
@@ -16,7 +18,17 @@ namespace EnableNewSteamFriendsSkin
     {
         static void Main(string[] args)
         {
-            Console.Title = "EnableNewSteamFriendsSkin";
+            if (args.Contains("--silent") || args.Contains("-s"))
+            {
+                silent = true;
+                if (Process.GetProcessesByName("Steam").Length == 0)
+                {
+                    Process.Start(steamDir + "\\Steam.exe");
+                    while (FindWindow("SDL_app", friendsString) == 0)
+                        Thread.Sleep(1000);
+                }
+            }
+            CreateConsole();
             PatchCacheFile();
         }
 
@@ -99,6 +111,8 @@ namespace EnableNewSteamFriendsSkin
                 return registryKey?.GetValue("Language").ToString();
         }
 
+        static bool silent = false;
+
         static readonly string friendsString = FindFriendsListString();
         static string FindFriendsListString()
         {
@@ -108,6 +122,29 @@ namespace EnableNewSteamFriendsSkin
 
         }
 
+        static void CreateConsole()
+        {
+            if (!silent)
+            {
+                AllocConsole();
+                try
+                {
+                    // Console.OpenStandardOutput eventually calls into GetStdHandle. As per MSDN documentation of GetStdHandle: http://msdn.microsoft.com/en-us/library/windows/desktop/ms683231(v=vs.85).aspx will return the redirected handle and not the allocated console:
+                    // "The standard handles of a process may be redirected by a call to  SetStdHandle, in which case  GetStdHandle returns the redirected handle. If the standard handles have been redirected, you can specify the CONIN$ value in a call to the CreateFile function to get a handle to a console's input buffer. Similarly, you can specify the CONOUT$ value to get a handle to a console's active screen buffer."
+                    // Get the handle to CONOUT$.    
+                    IntPtr stdHandle = CreateFile("CONOUT$", GENERIC_WRITE, FILE_SHARE_WRITE, 0, OPEN_EXISTING, 0, 0);
+                    SafeFileHandle safeFileHandle = new SafeFileHandle(stdHandle, true);
+                    FileStream fileStream = new FileStream(safeFileHandle, FileAccess.Write);
+                    Encoding encoding = System.Text.Encoding.GetEncoding(MY_CODE_PAGE);
+                    StreamWriter standardOutput = new StreamWriter(fileStream, encoding)
+                    {
+                        AutoFlush = true
+                    };
+                    Console.SetOut(standardOutput);
+                }
+                catch (Exception) { }
+            }
+        }
         /*
         static readonly string friendsWindow = FindFriendsWindow();
         static string FindFriendsWindow()
@@ -131,37 +168,56 @@ namespace EnableNewSteamFriendsSkin
 
         [DllImport("user32.dll", EntryPoint = "FindWindow")]
         static extern int FindWindow(string lpClassName, string lpWindowName);
+
         [DllImport("user32.dll", EntryPoint = "SendMessage")]
         static extern int SendMessage(int hWnd, uint Msg, int wParam, int lParam);
         const int WM_SYSCOMMAND = 0x0112;
         const int SC_CLOSE = 0xF060;
 
+        [DllImport("kernel32.dll", EntryPoint = "AllocConsole", SetLastError = true, CharSet = CharSet.Auto, CallingConvention = CallingConvention.StdCall)]
+        private static extern int AllocConsole();
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern IntPtr CreateFile(string lpFileName, uint dwDesiredAccess, uint dwShareMode, uint lpSecurityAttributes, uint dwCreationDisposition, uint dwFlagsAndAttributes, uint hTemplateFile);
+
+        private const int MY_CODE_PAGE = 437;
+        private const uint GENERIC_WRITE = 0x40000000;
+        private const uint FILE_SHARE_WRITE = 0x2;
+        private const uint OPEN_EXISTING = 0x3;
+
         static void PromptForExit()
         {
-            Console.WriteLine("Press any key to exit.");
-            Console.ReadKey();
+            Println("Press any key to exit.");
+            if(!silent)
+                Console.ReadKey();
             Environment.Exit(0);
+        }
+
+        static void Println(string message = null)
+        {
+            if(!silent)
+                Console.WriteLine(message);
         }
 
         static void PatchCacheFile()
         {
             string cachepath = Path.Combine(Environment.GetEnvironmentVariable("LocalAppData"), "Steam\\htmlcache\\Cache\\");
-            Console.WriteLine("Downloading latest friends.css from Steam...");
+            Println("Downloading latest friends.css from Steam...");
             byte[] originalcss = GetLatestFriendsCSS();
-            Console.WriteLine("Download successful.");
-            Console.WriteLine("Finding list of possible cache files...");
+            Println("Download successful.");
+            Println("Finding list of possible cache files...");
             if (!Directory.Exists(cachepath))
             {
-                Console.WriteLine("Cache folder does not exist.");
-                Console.WriteLine("Please confirm that Steam is running and that the friends list is open and try again.");
+                Println("Cache folder does not exist.");
+                Println("Please confirm that Steam is running and that the friends list is open and try again.");
                 PromptForExit();
             }
             string[] files = Directory.GetFiles(cachepath, "f_*");
-            Console.WriteLine("Found " + files.Length + " possible cache files");
+            Println("Found " + files.Length + " possible cache files");
             if(files.Length == 0)
             {
-                Console.WriteLine("Cache files have not been generated yet.");
-                Console.WriteLine("Please confirm that Steam is running and that the friends list is open and try again.");
+                Println("Cache files have not been generated yet.");
+                Println("Please confirm that Steam is running and that the friends list is open and try again.");
                 PromptForExit();
             }
             byte[] cachefile;
@@ -169,7 +225,7 @@ namespace EnableNewSteamFriendsSkin
             string friendscachefilelocation = null;
             string friendscachefilename = null;
 
-            Console.WriteLine("Checking cache files for match...");
+            Println("Checking cache files for match...");
             foreach (string s in files)
             {
                 cachefile = File.ReadAllBytes(s);
@@ -179,10 +235,10 @@ namespace EnableNewSteamFriendsSkin
                     decompressedcachefile = Decompress(cachefile);
                     if (decompressedcachefile.SequenceEqual(originalcss))
                     {
-                        Console.WriteLine("Success! Matching friends.css found at " + s);
+                        Println("Success! Matching friends.css found at " + s);
                         friendscachefilelocation = s;
                         friendscachefilename = Path.GetFileName(s);
-                        Console.WriteLine("Writing friends.css to disk");
+                        Println("Writing friends.css to disk");
                         File.WriteAllBytes(friendscachefilename + "-tmp", decompressedcachefile);
                         break;
                     }
@@ -191,21 +247,23 @@ namespace EnableNewSteamFriendsSkin
 
             if (friendscachefilelocation == null || friendscachefilename == null)
             {
+                if (silent)
+                    PromptForExit();
                 bool validresponse = false;
                 ConsoleKeyInfo cki;
                 string keypressed = null;
                 while (!validresponse)
                 {
-                    Console.WriteLine("friends.css location not found, would you like to clear your Steam cache and try again? Y/n");
+                    Println("friends.css location not found, would you like to clear your Steam cache and try again? Y/n");
                     cki = Console.ReadKey();
                     keypressed = cki.Key.ToString().ToLower();
-                    Console.WriteLine();
+                    Println();
                     if (keypressed == "y")
                     {
                         validresponse = true;
                         if (Process.GetProcessesByName("Steam").Length > 0)
                         {
-                            Console.WriteLine("Shutting down Steam to clear cache...");
+                            Println("Shutting down Steam to clear cache...");
                             Process.Start(steamDir + "\\Steam.exe", "-shutdown");
 
                             int count = 0;
@@ -216,24 +274,24 @@ namespace EnableNewSteamFriendsSkin
                             }
                             if (count > 5)
                             {
-                                Console.WriteLine("Could not successfully shutdown Steam, please manually shutdown Steam and try again.");
+                                Println("Could not successfully shutdown Steam, please manually shutdown Steam and try again.");
                                 PromptForExit();
                             }
                         }
 
-                        Console.WriteLine("Deleting cache files...");
+                        Println("Deleting cache files...");
                         Directory.Delete(cachepath, true);
 
-                        Console.WriteLine("Restarting Steam...");
+                        Println("Restarting Steam...");
                         Process.Start(steamDir + "\\Steam.exe");
 
-                        Console.WriteLine("Waiting for friends list to open...");
+                        Println("Waiting for friends list to open...");
                         while (FindWindow("SDL_app", friendsString) == 0)
                             Thread.Sleep(1000);
 
                         if (!Directory.Exists(cachepath))
                         {
-                            Console.WriteLine("Waiting for cache folder to be created...");
+                            Println("Waiting for cache folder to be created...");
                             while (!Directory.Exists(cachepath))
                                 Thread.Sleep(1000);
                         }
@@ -245,42 +303,42 @@ namespace EnableNewSteamFriendsSkin
                     if (keypressed == "n")
                     {
                         validresponse = true;
-                        Console.WriteLine("Could not find friends.css, please clear your Steam cache and try again or contact the developer.");
+                        Println("Could not find friends.css, please clear your Steam cache and try again or contact the developer.");
                         PromptForExit();
                     }
                 }
 
             }
 
-            Console.WriteLine("Adding import line to friends.css...");
+            Println("Adding import line to friends.css...");
             string importtext = "@import url(\"https://steamloopback.host/friends.custom.css\");\n";
             File.WriteAllText(friendscachefilename, importtext + File.ReadAllText(friendscachefilename + "-tmp"));
 
-            Console.WriteLine("Recompressing friends.css...");
+            Println("Recompressing friends.css...");
             cachefile = Compress(File.ReadAllBytes(friendscachefilename));
 
-            Console.WriteLine("Overwriting original friends.css...");
+            Println("Overwriting original friends.css...");
             File.WriteAllBytes(friendscachefilelocation, cachefile);
 
-            Console.WriteLine("Cleaning up...");
+            Println("Cleaning up...");
             File.Delete(friendscachefilename);
             File.Delete(friendscachefilename + "-tmp");
 
             if (Process.GetProcessesByName("Steam").Length > 0)
             {
-                Console.WriteLine("Trying to reopen friends window...");
+                Println("Trying to reopen friends window...");
                 int iHandle = FindWindow("SDL_app", friendsString);
                 if (iHandle > 0)
                     SendMessage(iHandle, WM_SYSCOMMAND, SC_CLOSE, 0);
                 else
-                    Console.WriteLine("Can't find friends window.");
+                    Println("Can't find friends window.");
                 Process.Start(steamDir + "\\Steam.exe", @"steam://open/friends/");
             }
 
 
-            Console.WriteLine("Finished! Put your custom css in " + steamDir + "\\clientui\\friends.custom.css");
-            Console.WriteLine("Close and reopen your Steam friends window to see changes.");
-            Console.WriteLine("Run this program again if your changes disappear as it likely means Valve updated the friends css file.");
+            Println("Finished! Put your custom css in " + steamDir + "\\clientui\\friends.custom.css");
+            Println("Close and reopen your Steam friends window to see changes.");
+            Println("Run this program again if your changes disappear as it likely means Valve updated the friends css file.");
             PromptForExit();
         }
     }
