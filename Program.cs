@@ -5,23 +5,20 @@ using System.IO.Compression;
 using System.Net;
 using System.Diagnostics;
 using System.Threading;
-//using System.Runtime.InteropServices;
+/*using System.Text.RegularExpressions;
+using System.Collections.Generic;
+using System.Runtime.InteropServices;*/
 
 
 namespace EnableNewSteamFriendsSkin
 {
     class Program
     {
-
         static void Main(string[] args)
         {
             Console.Title = "EnableNewSteamFriendsSkin";
             PatchCacheFile();
-
-
         }
-
-        static readonly string steamDir = FindSteamDir();
 
         static bool IsGZipHeader(byte[] arr)
         {
@@ -80,6 +77,7 @@ namespace EnableNewSteamFriendsSkin
             return downloadFile.DownloadData("https://steamcommunity-a.akamaihd.net/public/css/webui/friends.css");
         }
 
+        static readonly string steamDir = FindSteamDir();
         static string FindSteamDir()
         {
             using (var registryKey = Microsoft.Win32.Registry.CurrentUser.OpenSubKey("SOFTWARE\\Valve\\Steam"))
@@ -94,8 +92,52 @@ namespace EnableNewSteamFriendsSkin
             }
         }
 
-        /*[DllImport("user32.dll", EntryPoint = "FindWindow")]
+        /*
+        static readonly string steamLang = FindSteamLang();
+        static string FindSteamLang()
+        {
+            using (var registryKey = Microsoft.Win32.Registry.CurrentUser.OpenSubKey("SOFTWARE\\Valve\\Steam"))
+                return registryKey?.GetValue("Language").ToString();
+        }
+
+        static readonly string friendsString = FindFriendsListString();
+        static string FindFriendsListString()
+        {
+            string tracker = File.ReadAllText(steamDir + "\\friends\\trackerui_" + steamLang + ".txt");
+            string regex = "(?<=\"Friends_InviteInfo_FriendsList\"\\t{1,}\")(.*?)(?=\")";
+            return Regex.Match(tracker, regex).Value;
+
+        }
+
+        static readonly string friendsWindow = FindFriendsWindow();
+        static string FindFriendsWindow()
+        {
+            Process[] processlist = Process.GetProcesses();
+            List<String> windowlist = new List<string>();
+            foreach(Process process in processlist)
+            {
+                if (!String.IsNullOrEmpty(process.MainWindowTitle))
+                {
+                    windowlist.Add(process.MainWindowTitle);
+                }
+            }
+
+            string match = windowlist.First(s => s == friendsString + "*");
+            if (match != null)
+                return match;
+            else
+                return null;
+        }
+
+        [DllImport("user32.dll", EntryPoint = "FindWindow")]
         static extern int FindWindow(string lpClassName, string lpWindowName);*/
+
+        static void PromptForExit()
+        {
+            Console.WriteLine("Press any key to exit.");
+            Console.ReadKey();
+            Environment.Exit(0);
+        }
 
         static void PatchCacheFile()
         {
@@ -104,8 +146,20 @@ namespace EnableNewSteamFriendsSkin
             byte[] originalcss = GetLatestFriendsCSS();
             Console.WriteLine("Download successful.");
             Console.WriteLine("Finding list of possible cache files...");
+            if (!Directory.Exists(cachepath))
+            {
+                Console.WriteLine("Cache folder does not exist.");
+                Console.WriteLine("Please confirm that Steam is running and that the friends list is open and try again.");
+                PromptForExit();
+            }
             string[] files = Directory.GetFiles(cachepath, "f_*");
             Console.WriteLine("Found " + files.Length + " possible cache files");
+            if(files.Length == 0)
+            {
+                Console.WriteLine("Cache files have not been generated yet.");
+                Console.WriteLine("Please confirm that Steam is running and that the friends list is open and try again.");
+                PromptForExit();
+            }
             byte[] cachefile;
             byte[] decompressedcachefile;
             string friendscachefilelocation = null;
@@ -159,9 +213,7 @@ namespace EnableNewSteamFriendsSkin
                             if (count > 5)
                             {
                                 Console.WriteLine("Could not successfully shutdown Steam, please manually shutdown Steam and try again.");
-                                Console.WriteLine("Press any key to exit.");
-                                Console.ReadKey();
-                                Environment.Exit(1);
+                                PromptForExit();
                             }
                         }
 
@@ -172,7 +224,7 @@ namespace EnableNewSteamFriendsSkin
                         Process.Start(steamDir + "\\Steam.exe");
 
                         /*Console.WriteLine("Waiting for friends list to open...");
-                        while (FindWindow("SDL_app", null) == 0)
+                        while (FindWindow("SDL_app", FindFriendsWindow()) == 0)
                             Thread.Sleep(1000);*/
 
                         Console.WriteLine("Waiting for cache folder to be created...");
@@ -182,15 +234,12 @@ namespace EnableNewSteamFriendsSkin
                         Thread.Sleep(5000);
 
                         PatchCacheFile();
-                        return;
                     }
                     if (keypressed == "n")
                     {
                         validresponse = true;
                         Console.WriteLine("Could not find friends.css, please clear your Steam cache and try again or contact the developer.");
-                        Console.WriteLine("Press any key to exit.");
-                        Console.ReadKey();
-                        Environment.Exit(1);
+                        PromptForExit();
                     }
                 }
 
@@ -213,9 +262,7 @@ namespace EnableNewSteamFriendsSkin
             Console.WriteLine("Finished! Put your custom css in " + steamDir + "\\clientui\\friends.custom.css");
             Console.WriteLine("Close and reopen your Steam friends window to see changes.");
             Console.WriteLine("Run this program again if your changes disappear as it likely means Valve updated the friends css file.");
-            Console.WriteLine("Press any key to exit.");
-            Console.ReadKey();
-            Environment.Exit(0);
+            PromptForExit();
         }
     }
 }
