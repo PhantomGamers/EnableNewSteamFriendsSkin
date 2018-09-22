@@ -24,15 +24,8 @@ namespace EnableNewSteamFriendsSkin
                     steamargs = Regex.Match(s, regex).Value;
 
             if (args.Contains("--silent") || args.Contains("-s"))
-            {
                 silent = true;
-                if (Process.GetProcessesByName("Steam").Length == 0)
-                {
-                    Process.Start(steamDir + "\\Steam.exe", steamargs);
-                    while (FindWindow("SDL_app", friendsString) == 0)
-                        Thread.Sleep(1000);
-                }
-            }
+
             /* In case of emergency break glass (Possible hacky solution to pattern searching the window title)
             IntPtr hwnd = (IntPtr)FindWindow("SDL_app", null);
             int length = GetWindowTextLength(hwnd);
@@ -40,7 +33,31 @@ namespace EnableNewSteamFriendsSkin
             GetWindowText(hwnd, sb, sb.Capacity);
             Println(sb.ToString());
             PromptForExit();*/
+
             CreateConsole();
+
+            if (Process.GetProcessesByName("Steam").Length == 0)
+            {
+                Println("Steam is not running, starting Steam.");
+                Process.Start(steamDir + "\\Steam.exe", steamargs);
+                Println("Waiting for friends list to open...");
+                Println("If friends list does not open automatically, please open manually.");
+                int countdown = timeout;
+                while (FindWindow("SDL_app", friendsString) == 0 && countdown > 0)
+                {
+                    Thread.Sleep(1000);
+                    countdown--;
+                }
+
+                if (countdown == 0)
+                {
+                    Println("Friends list could not be found.");
+                    Println("If your friends list is open, please report this to the developer.");
+                    Println("Otherwise, open your friends list and restart the program.");
+                    PromptForExit();
+                }
+            }
+
             PatchCacheFile();
         }
 
@@ -125,8 +142,12 @@ namespace EnableNewSteamFriendsSkin
                 return registryKey?.GetValue("Language").ToString();
         }
 
+        // whether or not the program should display a window
         private static bool silent = false;
+        // arguments to be sent to steam
         private static string steamargs = null;
+        // max time we will wait for steam friends list to be detected in seconds
+        private static readonly int timeout = 300; // 5 minutes
 
         private static readonly string friendsString = FindFriendsListString();
 
@@ -310,8 +331,21 @@ namespace EnableNewSteamFriendsSkin
                         Process.Start(steamDir + "\\Steam.exe", steamargs);
 
                         Println("Waiting for friends list to open...");
-                        while (FindWindow("SDL_app", friendsString) == 0)
+                        Println("If your friends list does not open automatically, please open manually.");
+                        int countdown = timeout;
+                        while (FindWindow("SDL_app", friendsString) == 0 && countdown > 0)
+                        {
                             Thread.Sleep(1000);
+                            countdown--;
+                        }
+
+                        if (countdown == 0)
+                        {
+                            Println("Friends list could not be found.");
+                            Println("If your friends list is open, please report this to the developer.");
+                            Println("Otherwise, open your friends list and restart the program.");
+                            PromptForExit();
+                        }
 
                         if (!Directory.Exists(cachepath))
                         {
