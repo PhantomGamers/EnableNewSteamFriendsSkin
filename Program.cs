@@ -18,16 +18,28 @@ namespace EnableNewSteamFriendsSkin
     {
         static void Main(string[] args)
         {
+            string regex = "(?<=-p=)(.*)|(?<=--pass=)(.*)";
+            foreach (string s in args)
+                if (s.Contains("-p") || s.Contains("--pass"))
+                    steamargs = Regex.Match(s, regex).Value;
+
             if (args.Contains("--silent") || args.Contains("-s"))
             {
                 silent = true;
                 if (Process.GetProcessesByName("Steam").Length == 0)
                 {
-                    Process.Start(steamDir + "\\Steam.exe");
+                    Process.Start(steamDir + "\\Steam.exe", steamargs);
                     while (FindWindow("SDL_app", friendsString) == 0)
                         Thread.Sleep(1000);
                 }
             }
+            /* In case of emergency break glass (Possible hacky solution to pattern searching the window title)
+            IntPtr hwnd = (IntPtr)FindWindow("SDL_app", null);
+            int length = GetWindowTextLength(hwnd);
+            StringBuilder sb = new StringBuilder(length + 1);
+            GetWindowText(hwnd, sb, sb.Capacity);
+            Println(sb.ToString());
+            PromptForExit();*/
             CreateConsole();
             PatchCacheFile();
         }
@@ -112,6 +124,7 @@ namespace EnableNewSteamFriendsSkin
         }
 
         static bool silent = false;
+        static string steamargs = null;
 
         static readonly string friendsString = FindFriendsListString();
         static string FindFriendsListString()
@@ -169,6 +182,12 @@ namespace EnableNewSteamFriendsSkin
 
         [DllImport("user32.dll", EntryPoint = "FindWindow")]
         static extern int FindWindow(string lpClassName, string lpWindowName);
+
+        /*[DllImport("user32.dll", SetLastError = true, CharSet = CharSet.Auto)]
+        static extern int GetWindowTextLength(IntPtr hWnd);
+        
+        [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
+        static extern int GetWindowText(IntPtr hWnd, StringBuilder lpString, int nMaxCount);*/
 
         [DllImport("user32.dll", EntryPoint = "SendMessage")]
         static extern int SendMessage(int hWnd, uint Msg, int wParam, int lParam);
@@ -284,7 +303,7 @@ namespace EnableNewSteamFriendsSkin
                         Directory.Delete(cachepath, true);
 
                         Println("Restarting Steam...");
-                        Process.Start(steamDir + "\\Steam.exe");
+                        Process.Start(steamDir + "\\Steam.exe", steamargs);
 
                         Println("Waiting for friends list to open...");
                         while (FindWindow("SDL_app", friendsString) == 0)
@@ -335,7 +354,6 @@ namespace EnableNewSteamFriendsSkin
                     Println("Can't find friends window.");
                 Process.Start(steamDir + "\\Steam.exe", @"steam://open/friends/");
             }
-
 
             Println("Finished! Put your custom css in " + steamDir + "\\clientui\\friends.custom.css");
             Println("Close and reopen your Steam friends window to see changes.");
