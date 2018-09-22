@@ -1,22 +1,22 @@
-﻿using System;
-using System.Linq;
+﻿using Microsoft.Win32.SafeHandles;
+using System;
+using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
+using System.Linq;
 using System.Net;
-using System.Diagnostics;
-using System.Threading;
 using System.Runtime.InteropServices;
-using System.Text.RegularExpressions;
-using Microsoft.Win32.SafeHandles;
 using System.Text;
-//using System.Collections.Generic;
+using System.Text.RegularExpressions;
+using System.Threading;
 
+//using System.Collections.Generic;
 
 namespace EnableNewSteamFriendsSkin
 {
-    class Program
+    internal class Program
     {
-        static void Main(string[] args)
+        private static void Main(string[] args)
         {
             string regex = "(?<=-p=)(.*)|(?<=--pass=)(.*)";
             foreach (string s in args)
@@ -44,7 +44,7 @@ namespace EnableNewSteamFriendsSkin
             PatchCacheFile();
         }
 
-        static bool IsGZipHeader(byte[] arr)
+        private static bool IsGZipHeader(byte[] arr)
         {
             return arr.Length >= 2 &&
                 arr[0] == 31 &&
@@ -54,7 +54,7 @@ namespace EnableNewSteamFriendsSkin
         /// <summary>
         /// Compresses byte array to new byte array.
         /// </summary>
-        static byte[] Compress(byte[] raw)
+        private static byte[] Compress(byte[] raw)
         {
             using (MemoryStream memory = new MemoryStream())
             {
@@ -67,7 +67,7 @@ namespace EnableNewSteamFriendsSkin
             }
         }
 
-        static byte[] Decompress(byte[] gzip)
+        private static byte[] Decompress(byte[] gzip)
         {
             // Create a GZIP stream with decompression mode.
             // ... Then create a buffer and write into while reading from the GZIP stream.
@@ -93,7 +93,7 @@ namespace EnableNewSteamFriendsSkin
             }
         }
 
-        static byte[] GetLatestFriendsCSS()
+        private static byte[] GetLatestFriendsCSS()
         {
             Uri LatestURI = new Uri("https://google.com/");
             WebClient downloadFile = new WebClient();
@@ -101,8 +101,9 @@ namespace EnableNewSteamFriendsSkin
             return downloadFile.DownloadData("https://steamcommunity-a.akamaihd.net/public/css/webui/friends.css");
         }
 
-        static readonly string steamDir = FindSteamDir();
-        static string FindSteamDir()
+        private static readonly string steamDir = FindSteamDir();
+
+        private static string FindSteamDir()
         {
             using (var registryKey = Microsoft.Win32.Registry.CurrentUser.OpenSubKey("SOFTWARE\\Valve\\Steam"))
             {
@@ -116,26 +117,27 @@ namespace EnableNewSteamFriendsSkin
             }
         }
 
-        static readonly string steamLang = FindSteamLang();
-        static string FindSteamLang()
+        private static readonly string steamLang = FindSteamLang();
+
+        private static string FindSteamLang()
         {
             using (var registryKey = Microsoft.Win32.Registry.CurrentUser.OpenSubKey("SOFTWARE\\Valve\\Steam"))
                 return registryKey?.GetValue("Language").ToString();
         }
 
-        static bool silent = false;
-        static string steamargs = null;
+        private static bool silent = false;
+        private static string steamargs = null;
 
-        static readonly string friendsString = FindFriendsListString();
-        static string FindFriendsListString()
+        private static readonly string friendsString = FindFriendsListString();
+
+        private static string FindFriendsListString()
         {
             string tracker = File.ReadAllText(steamDir + "\\friends\\trackerui_" + steamLang + ".txt");
             string regex = "(?<=\"Friends_InviteInfo_FriendsList\"\\t{1,}\")(.*?)(?=\")";
             return Regex.Match(tracker, regex).Value;
-
         }
 
-        static void CreateConsole()
+        private static void CreateConsole()
         {
             if (!silent)
             {
@@ -144,7 +146,7 @@ namespace EnableNewSteamFriendsSkin
                 {
                     // Console.OpenStandardOutput eventually calls into GetStdHandle. As per MSDN documentation of GetStdHandle: http://msdn.microsoft.com/en-us/library/windows/desktop/ms683231(v=vs.85).aspx will return the redirected handle and not the allocated console:
                     // "The standard handles of a process may be redirected by a call to  SetStdHandle, in which case  GetStdHandle returns the redirected handle. If the standard handles have been redirected, you can specify the CONIN$ value in a call to the CreateFile function to get a handle to a console's input buffer. Similarly, you can specify the CONOUT$ value to get a handle to a console's active screen buffer."
-                    // Get the handle to CONOUT$.    
+                    // Get the handle to CONOUT$.
                     IntPtr stdHandle = CreateFile("CONOUT$", GENERIC_WRITE, FILE_SHARE_WRITE, 0, OPEN_EXISTING, 0, 0);
                     SafeFileHandle safeFileHandle = new SafeFileHandle(stdHandle, true);
                     FileStream fileStream = new FileStream(safeFileHandle, FileAccess.Write);
@@ -159,6 +161,7 @@ namespace EnableNewSteamFriendsSkin
                 catch (Exception) { }
             }
         }
+
         /*
         static readonly string friendsWindow = FindFriendsWindow();
         static string FindFriendsWindow()
@@ -181,18 +184,19 @@ namespace EnableNewSteamFriendsSkin
         }*/
 
         [DllImport("user32.dll", EntryPoint = "FindWindow")]
-        static extern int FindWindow(string lpClassName, string lpWindowName);
+        private static extern int FindWindow(string lpClassName, string lpWindowName);
 
         /*[DllImport("user32.dll", SetLastError = true, CharSet = CharSet.Auto)]
         static extern int GetWindowTextLength(IntPtr hWnd);
-        
+
         [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
         static extern int GetWindowText(IntPtr hWnd, StringBuilder lpString, int nMaxCount);*/
 
         [DllImport("user32.dll", EntryPoint = "SendMessage")]
-        static extern int SendMessage(int hWnd, uint Msg, int wParam, int lParam);
-        const int WM_SYSCOMMAND = 0x0112;
-        const int SC_CLOSE = 0xF060;
+        private static extern int SendMessage(int hWnd, uint Msg, int wParam, int lParam);
+
+        private const int WM_SYSCOMMAND = 0x0112;
+        private const int SC_CLOSE = 0xF060;
 
         [DllImport("kernel32.dll", EntryPoint = "AllocConsole", SetLastError = true, CharSet = CharSet.Auto, CallingConvention = CallingConvention.StdCall)]
         private static extern int AllocConsole();
@@ -205,21 +209,21 @@ namespace EnableNewSteamFriendsSkin
         private const uint FILE_SHARE_WRITE = 0x2;
         private const uint OPEN_EXISTING = 0x3;
 
-        static void PromptForExit()
+        private static void PromptForExit()
         {
             Println("Press any key to exit.");
-            if(!silent)
+            if (!silent)
                 Console.ReadKey();
             Environment.Exit(0);
         }
 
-        static void Println(string message = null)
+        private static void Println(string message = null)
         {
-            if(!silent)
+            if (!silent)
                 Console.WriteLine(message);
         }
 
-        static void PatchCacheFile()
+        private static void PatchCacheFile()
         {
             string cachepath = Path.Combine(Environment.GetEnvironmentVariable("LocalAppData"), "Steam\\htmlcache\\Cache\\");
             Println("Downloading latest friends.css from Steam...");
@@ -234,7 +238,7 @@ namespace EnableNewSteamFriendsSkin
             }
             string[] files = Directory.GetFiles(cachepath, "f_*");
             Println("Found " + files.Length + " possible cache files");
-            if(files.Length == 0)
+            if (files.Length == 0)
             {
                 Println("Cache files have not been generated yet.");
                 Println("Please confirm that Steam is running and that the friends list is open and try again.");
@@ -327,7 +331,6 @@ namespace EnableNewSteamFriendsSkin
                         PromptForExit();
                     }
                 }
-
             }
 
             Println("Adding import line to friends.css...");
