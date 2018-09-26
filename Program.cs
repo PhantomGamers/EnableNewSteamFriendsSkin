@@ -36,27 +36,7 @@ namespace EnableNewSteamFriendsSkin
 
             CreateConsole();
 
-            if (Process.GetProcessesByName("Steam").Length == 0)
-            {
-                Println("Steam is not running, starting Steam.");
-                Process.Start(steamDir + "\\Steam.exe", steamargs);
-                Println("Waiting for friends list to open...");
-                Println("If friends list does not open automatically, please open manually.");
-                int countdown = timeout;
-                while (FindWindow("SDL_app", friendsString) == 0 && countdown > 0)
-                {
-                    Thread.Sleep(1000);
-                    countdown--;
-                }
-
-                if (countdown == 0)
-                {
-                    Println("Friends list could not be found.");
-                    Println("If your friends list is open, please report this to the developer.");
-                    Println("Otherwise, open your friends list and restart the program.");
-                    PromptForExit();
-                }
-            }
+            StartAndWaitForSteam();
 
             PatchCacheFile();
         }
@@ -180,6 +160,31 @@ namespace EnableNewSteamFriendsSkin
                     Console.SetOut(standardOutput);
                 }
                 catch (Exception) { }
+            }
+        }
+
+        private static void StartAndWaitForSteam()
+        {
+            if (Process.GetProcessesByName("Steam").Length == 0)
+            {
+                Println("Starting Steam...");
+                Process.Start(steamDir + "\\Steam.exe", steamargs);
+                Println("Waiting for friends list to open...");
+                Println("If friends list does not open automatically, please open manually.");
+                int countdown = timeout;
+                while (FindWindow("SDL_app", friendsString) == 0 && countdown > 0)
+                {
+                    Thread.Sleep(1000);
+                    countdown--;
+                }
+
+                if (countdown == 0)
+                {
+                    Println("Friends list could not be found.");
+                    Println("If your friends list is open, please report this to the developer.");
+                    Println("Otherwise, open your friends list and restart the program.");
+                    PromptForExit();
+                }
             }
         }
 
@@ -312,12 +317,12 @@ namespace EnableNewSteamFriendsSkin
                             Process.Start(steamDir + "\\Steam.exe", "-shutdown");
 
                             int count = 0;
-                            while (Process.GetProcessesByName("Steam").Length > 0 && count <= 5)
+                            while (Process.GetProcessesByName("Steam").Length > 0 && count <= 10)
                             {
                                 Thread.Sleep(1000);
                                 count++;
                             }
-                            if (count > 5)
+                            if (count > 10)
                             {
                                 Println("Could not successfully shutdown Steam, please manually shutdown Steam and try again.");
                                 PromptForExit();
@@ -327,25 +332,7 @@ namespace EnableNewSteamFriendsSkin
                         Println("Deleting cache files...");
                         Directory.Delete(cachepath, true);
 
-                        Println("Restarting Steam...");
-                        Process.Start(steamDir + "\\Steam.exe", steamargs);
-
-                        Println("Waiting for friends list to open...");
-                        Println("If your friends list does not open automatically, please open manually.");
-                        int countdown = timeout;
-                        while (FindWindow("SDL_app", friendsString) == 0 && countdown > 0)
-                        {
-                            Thread.Sleep(1000);
-                            countdown--;
-                        }
-
-                        if (countdown == 0)
-                        {
-                            Println("Friends list could not be found.");
-                            Println("If your friends list is open, please report this to the developer.");
-                            Println("Otherwise, open your friends list and restart the program.");
-                            PromptForExit();
-                        }
+                        StartAndWaitForSteam();
 
                         if (!Directory.Exists(cachepath))
                         {
