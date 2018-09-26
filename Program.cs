@@ -18,13 +18,40 @@ namespace EnableNewSteamFriendsSkin
     {
         private static void Main(string[] args)
         {
-            string regex = "(?<=-p=)(.*)|(?<=--pass=)(.*)";
+            string silentregex = "-s$|--silent$";
+            string passregex = "(?<=-p=)(.*)|(?<=--pass=)(.*)";
+            string steampathregex = "(?<=-sp=)(.*)|(?<=--steampath=)(.*)";
+            string steamlangregex = "(?<=-sl=)(.*)|(?<=--steamlang=)(.*)";
             foreach (string s in args)
-                if (s.Contains("-p") || s.Contains("--pass"))
-                    steamargs = Regex.Match(s, regex).Value;
+            {
+                if (Regex.Match(s, passregex).Success)
+                    steamargs = Regex.Match(s, passregex).Value;
 
-            if (args.Contains("--silent") || args.Contains("-s"))
-                silent = true;
+                if (Regex.Match(s, steampathregex).Success)
+                    steamDir = Regex.Match(s, steampathregex).Value;
+
+                if (Regex.Match(s, steamlangregex).Success)
+                    steamLang = Regex.Match(s, steamlangregex).Value;
+
+                if (Regex.Match(s, silentregex).Success)
+                    silent = true;
+            }
+
+            CreateConsole();
+
+            if (!Directory.Exists(steamDir))
+            {
+                Println("Steam directory not found. Please specify correct Steam path with the -sp argument.");
+                Println("For example: -sp=\"C:/Program Files (x86)/Steam/\"");
+                PromptForExit();
+            }
+
+            if (!File.Exists(steamDir + "\\friends\\trackerui_" + steamLang + ".txt"))
+            {
+                Println("Steam language file not found. Please specify correct language with the -sl argument.");
+                Println("If your language is english this would be -sl=\"english\"");
+                PromptForExit();
+            }
 
             /* In case of emergency break glass (Possible hacky solution to pattern searching the window title)
             IntPtr hwnd = (IntPtr)FindWindow("SDL_app", null);
@@ -33,8 +60,6 @@ namespace EnableNewSteamFriendsSkin
             GetWindowText(hwnd, sb, sb.Capacity);
             Println(sb.ToString());
             PromptForExit();*/
-
-            CreateConsole();
 
             StartAndWaitForSteam();
 
@@ -98,7 +123,7 @@ namespace EnableNewSteamFriendsSkin
             return downloadFile.DownloadData("https://steamcommunity-a.akamaihd.net/public/css/webui/friends.css");
         }
 
-        private static readonly string steamDir = FindSteamDir();
+        private static string steamDir = FindSteamDir();
 
         private static string FindSteamDir()
         {
@@ -114,7 +139,7 @@ namespace EnableNewSteamFriendsSkin
             }
         }
 
-        private static readonly string steamLang = FindSteamLang();
+        private static string steamLang = FindSteamLang();
 
         private static string FindSteamLang()
         {
