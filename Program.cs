@@ -31,7 +31,10 @@ namespace EnableNewSteamFriendsSkin
                     steamDir = Regex.Match(s, steampathregex).Value;
 
                 if (Regex.Match(s, steamlangregex).Success)
+                {
                     steamLang = Regex.Match(s, steamlangregex).Value;
+                    steamLangFile = steamDir + "\\friends\\trackerui_" + steamLang + ".txt";
+                }
 
                 if (Regex.Match(s, silentregex).Success)
                     silent = true;
@@ -43,14 +46,12 @@ namespace EnableNewSteamFriendsSkin
             {
                 Println("Steam directory not found. Please specify correct Steam path with the -sp argument.");
                 Println("For example: -sp=\"C:/Program Files (x86)/Steam/\"");
-                PromptForExit();
             }
 
-            if (!File.Exists(steamDir + "\\friends\\trackerui_" + steamLang + ".txt"))
+            if (!File.Exists(steamLangFile))
             {
                 Println("Steam language file not found. Please specify correct language with the -sl argument.");
                 Println("If your language is english this would be -sl=\"english\"");
-                PromptForExit();
             }
 
             /* In case of emergency break glass (Possible hacky solution to pattern searching the window title)
@@ -140,6 +141,7 @@ namespace EnableNewSteamFriendsSkin
         }
 
         private static string steamLang = FindSteamLang();
+        private static string steamLangFile = steamDir + "\\friends\\trackerui_" + steamLang + ".txt";
 
         private static string FindSteamLang()
         {
@@ -158,9 +160,13 @@ namespace EnableNewSteamFriendsSkin
 
         private static string FindFriendsListString()
         {
-            string tracker = File.ReadAllText(steamDir + "\\friends\\trackerui_" + steamLang + ".txt");
+            string s = null;
+            string tracker = File.ReadAllText(steamLangFile);
             string regex = "(?<=\"Friends_InviteInfo_FriendsList\"\\t{1,}\")(.*?)(?=\")";
-            return Regex.Match(tracker, regex).Value;
+            string smatch = Regex.Match(tracker, regex).Value;
+            if (smatch != null)
+                s = smatch;
+            return s;
         }
 
         private static void CreateConsole()
@@ -190,14 +196,14 @@ namespace EnableNewSteamFriendsSkin
 
         private static void StartAndWaitForSteam()
         {
-            if (Process.GetProcessesByName("Steam").Length == 0)
+            if (Process.GetProcessesByName("Steam").Length == 0 && Directory.Exists(steamDir))
             {
                 Println("Starting Steam...");
                 Process.Start(steamDir + "\\Steam.exe", steamargs);
                 Println("Waiting for friends list to open...");
                 Println("If friends list does not open automatically, please open manually.");
                 int countdown = timeout;
-                while (FindWindow("SDL_app", friendsString) == 0 && countdown > 0)
+                while (FindWindow("SDL_app", friendsString) == 0 && countdown > 0 && File.Exists(steamLangFile))
                 {
                     Thread.Sleep(1000);
                     countdown--;
@@ -336,7 +342,7 @@ namespace EnableNewSteamFriendsSkin
                     if (keypressed == "y")
                     {
                         validresponse = true;
-                        if (Process.GetProcessesByName("Steam").Length > 0)
+                        if (Process.GetProcessesByName("Steam").Length > 0 && Directory.Exists(steamDir))
                         {
                             Println("Shutting down Steam to clear cache...");
                             Process.Start(steamDir + "\\Steam.exe", "-shutdown");
@@ -352,6 +358,12 @@ namespace EnableNewSteamFriendsSkin
                                 Println("Could not successfully shutdown Steam, please manually shutdown Steam and try again.");
                                 PromptForExit();
                             }
+                        }
+
+                        if (!Directory.Exists(steamDir))
+                        {
+                            Println("Cannot find Steam directory to shutdown, please specify correct Steam path with -sp and try again.");
+                            PromptForExit();
                         }
 
                         Println("Deleting cache files...");
@@ -393,7 +405,7 @@ namespace EnableNewSteamFriendsSkin
             File.Delete(friendscachefilename);
             File.Delete(friendscachefilename + "-tmp");
 
-            if (Process.GetProcessesByName("Steam").Length > 0)
+            if (Process.GetProcessesByName("Steam").Length > 0 && Directory.Exists(steamDir))
             {
                 Println("Trying to reopen friends window...");
                 int iHandle = FindWindow("SDL_app", friendsString);
