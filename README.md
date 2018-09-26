@@ -44,5 +44,5 @@ You tell me?
 
 # Credits
 * Darth from the Steam community forums for the method.
-* henrikx for Steam directory detection code.
+* @henrikx for Steam directory detection code.
 * Sam Allen of Dot Net Perls for GZIP compression, decompression, and detection code.
