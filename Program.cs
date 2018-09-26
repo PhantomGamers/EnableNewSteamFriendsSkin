@@ -151,8 +151,10 @@ namespace EnableNewSteamFriendsSkin
 
         // whether or not the program should display a window
         private static bool silent = false;
+
         // arguments to be sent to steam
         private static string steamargs = null;
+
         // max time we will wait for steam friends list to be detected in seconds
         private static readonly int timeout = 300; // 5 minutes
 
@@ -160,10 +162,14 @@ namespace EnableNewSteamFriendsSkin
 
         private static string FindFriendsListString()
         {
-            string s = null;
-            string tracker = File.ReadAllText(steamLangFile);
             string regex = "(?<=\"Friends_InviteInfo_FriendsList\"\\t{1,}\")(.*?)(?=\")";
-            string smatch = Regex.Match(tracker, regex).Value;
+            string s = null;
+            string tracker = null;
+            string smatch = null;
+            if (File.Exists(steamLangFile))
+                tracker = File.ReadAllText(steamLangFile);
+            if (tracker != null)
+                smatch = Regex.Match(tracker, regex).Value;
             if (smatch != null)
                 s = smatch;
             return s;
@@ -202,8 +208,10 @@ namespace EnableNewSteamFriendsSkin
                 Process.Start(steamDir + "\\Steam.exe", steamargs);
                 Println("Waiting for friends list to open...");
                 Println("If friends list does not open automatically, please open manually.");
+                if (friendsString == null)
+                    Println("Steam translation file not found, checking for friends class name only.");
                 int countdown = timeout;
-                while (FindWindow("SDL_app", friendsString) == 0 && countdown > 0 && File.Exists(steamLangFile))
+                while (FindWindow("SDL_app", friendsString) == 0 && countdown > 0)
                 {
                     Thread.Sleep(1000);
                     countdown--;
