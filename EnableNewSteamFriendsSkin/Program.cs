@@ -10,8 +10,6 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 
-//using System.Collections.Generic;
-
 namespace EnableNewSteamFriendsSkin
 {
     internal class Program
@@ -53,14 +51,6 @@ namespace EnableNewSteamFriendsSkin
                 Println("Steam language file not found. Please specify correct language with the -sl argument.");
                 Println("If your language is english this would be -sl=\"english\"");
             }
-
-            /* In case of emergency break glass (Possible hacky solution to pattern searching the window title)
-            IntPtr hwnd = (IntPtr)FindWindow("SDL_app", null);
-            int length = GetWindowTextLength(hwnd);
-            StringBuilder sb = new StringBuilder(length + 1);
-            GetWindowText(hwnd, sb, sb.Capacity);
-            Println(sb.ToString());
-            PromptForExit();*/
 
             StartAndWaitForSteam();
 
@@ -211,7 +201,7 @@ namespace EnableNewSteamFriendsSkin
                 if (friendsString == null)
                     Println("Steam translation file not found, checking for friends class name only.");
                 int countdown = timeout;
-                while (FindWindow("SDL_app", friendsString) == 0 && countdown > 0)
+                while (!FindFriendsWindow())
                 {
                     Thread.Sleep(1000);
                     countdown--;
@@ -234,52 +224,14 @@ namespace EnableNewSteamFriendsSkin
             byte[] output = append.Concat(file).ToArray();
             return output;
         }
-        /*
-        static readonly string friendsWindow = FindFriendsWindow();
-        static string FindFriendsWindow()
+
+        private static bool FindFriendsWindow()
         {
-            Process[] processlist = Process.GetProcesses();
-            List<String> windowlist = new List<string>();
-            foreach(Process process in processlist)
-            {
-                if (!String.IsNullOrEmpty(process.MainWindowTitle))
-                {
-                    windowlist.Add(process.MainWindowTitle);
-                }
-            }
-
-            string match = windowlist.First(s => s == friendsString + "*");
-            if (match != null)
-                return match;
+            if (Windows.FindWindowLike.Find(0, friendsString, "SDL_app").Count() > 0)
+                return true;
             else
-                return null;
-        }*/
-
-        [DllImport("user32.dll", EntryPoint = "FindWindow")]
-        private static extern int FindWindow(string lpClassName, string lpWindowName);
-
-        /*[DllImport("user32.dll", SetLastError = true, CharSet = CharSet.Auto)]
-        static extern int GetWindowTextLength(IntPtr hWnd);
-
-        [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
-        static extern int GetWindowText(IntPtr hWnd, StringBuilder lpString, int nMaxCount);*/
-
-        [DllImport("user32.dll", EntryPoint = "SendMessage")]
-        private static extern int SendMessage(int hWnd, uint Msg, int wParam, int lParam);
-
-        private const int WM_SYSCOMMAND = 0x0112;
-        private const int SC_CLOSE = 0xF060;
-
-        [DllImport("kernel32.dll", EntryPoint = "AllocConsole", SetLastError = true, CharSet = CharSet.Auto, CallingConvention = CallingConvention.StdCall)]
-        private static extern int AllocConsole();
-
-        [DllImport("kernel32.dll", SetLastError = true)]
-        private static extern IntPtr CreateFile(string lpFileName, uint dwDesiredAccess, uint dwShareMode, uint lpSecurityAttributes, uint dwCreationDisposition, uint dwFlagsAndAttributes, uint hTemplateFile);
-
-        private const int MY_CODE_PAGE = 437;
-        private const uint GENERIC_WRITE = 0x40000000;
-        private const uint FILE_SHARE_WRITE = 0x2;
-        private const uint OPEN_EXISTING = 0x3;
+                return false;
+        }
 
         private static void PromptForExit()
         {
@@ -344,13 +296,10 @@ namespace EnableNewSteamFriendsSkin
 
                         if (Process.GetProcessesByName("Steam").Length > 0 && Directory.Exists(steamDir))
                         {
-                            Println("Trying to reopen friends window...");
-                            int iHandle = FindWindow("SDL_app", friendsString);
-                            if (iHandle > 0)
-                                SendMessage(iHandle, WM_SYSCOMMAND, SC_CLOSE, 0);
-                            else
-                                Println("Can't find friends window.");
-                            Process.Start(steamDir + "\\Steam.exe", @"steam://open/friends/");
+                            Println("Reloading friends window...");
+                            Process.Start(steamDir + "\\Steam.exe", @"steam://friends/status/offline");
+                            Thread.Sleep(1000);
+                            Process.Start(steamDir + "\\Steam.exe", @"steam://friends/status/online");
                         }
 
                         Println("Finished! Put your custom css in " + steamDir + "\\clientui\\friends.custom.css");
@@ -426,5 +375,15 @@ namespace EnableNewSteamFriendsSkin
                 }
             }
         }
+        [DllImport("kernel32.dll", EntryPoint = "AllocConsole", SetLastError = true, CharSet = CharSet.Auto, CallingConvention = CallingConvention.StdCall)]
+        private static extern int AllocConsole();
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern IntPtr CreateFile(string lpFileName, uint dwDesiredAccess, uint dwShareMode, uint lpSecurityAttributes, uint dwCreationDisposition, uint dwFlagsAndAttributes, uint hTemplateFile);
+
+        private const int MY_CODE_PAGE = 437;
+        private const uint GENERIC_WRITE = 0x40000000;
+        private const uint FILE_SHARE_WRITE = 0x2;
+        private const uint OPEN_EXISTING = 0x3;
     }
 }
