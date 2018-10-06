@@ -5,6 +5,7 @@ using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Net;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -183,7 +184,7 @@ namespace EnableNewSteamFriendsSkin
                     {
                         AutoFlush = true
                     };
-                    Console.Title = "Steam Friends Skin Patcher";
+                    Console.Title = "Steam Friends Skin Patcher v" + Assembly.GetEntryAssembly().GetName().Version;
                     Console.SetOut(standardOutput);
                 }
                 catch (Exception) { }
