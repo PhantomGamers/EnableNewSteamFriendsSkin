@@ -46,3 +46,4 @@ You tell me?
 * Darth from the Steam community forums for the method.
 * @henrikx for Steam directory detection code.
 * Sam Allen of Dot Net Perls for GZIP compression, decompression, and detection code.
+* Bob Learned of Experts Exchange for FindWindowLike code.
