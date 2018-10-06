@@ -184,7 +184,8 @@ namespace EnableNewSteamFriendsSkin
                     {
                         AutoFlush = true
                     };
-                    Console.Title = "Steam Friends Skin Patcher v" + Assembly.GetEntryAssembly().GetName().Version;
+                    Version ver = Assembly.GetEntryAssembly().GetName().Version;
+                    Console.Title = "Steam Friends Skin Patcher v" + ver.Major + "." + ver.Minor + "." + ver.Build; ;
                     Console.SetOut(standardOutput);
                 }
                 catch (Exception) { }
