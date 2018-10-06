@@ -227,6 +227,13 @@ namespace EnableNewSteamFriendsSkin
             }
         }
 
+        private static byte[] PrependFile(byte[] file)
+        {
+            string appendText = "@import url(\"https://steamloopback.host/friends.custom.css\");\n";
+            byte[] append = Encoding.ASCII.GetBytes(appendText);
+            byte[] output = append.Concat(file).ToArray();
+            return output;
+        }
         /*
         static readonly string friendsWindow = FindFriendsWindow();
         static string FindFriendsWindow()
@@ -311,8 +318,7 @@ namespace EnableNewSteamFriendsSkin
             }
             byte[] cachefile;
             byte[] decompressedcachefile;
-            string friendscachefilelocation = null;
-            string friendscachefilename = null;
+            string friendscachefile = null;
 
             Println("Checking cache files for match...");
             foreach (string s in files)
@@ -325,16 +331,39 @@ namespace EnableNewSteamFriendsSkin
                     if (decompressedcachefile.SequenceEqual(originalcss))
                     {
                         Println("Success! Matching friends.css found at " + s);
-                        friendscachefilelocation = s;
-                        friendscachefilename = Path.GetFileName(s);
-                        Println("Writing friends.css to disk");
-                        File.WriteAllBytes(friendscachefilename + "-tmp", decompressedcachefile);
+                        friendscachefile = s;
+
+                        Println("Adding import line to friends.css...");
+                        decompressedcachefile = PrependFile(decompressedcachefile);
+
+                        Println("Recompressing friends.css...");
+                        cachefile = Compress(decompressedcachefile);
+
+                        Println("Overwriting original friends.css...");
+                        File.WriteAllBytes(friendscachefile, cachefile);
+
+                        if (Process.GetProcessesByName("Steam").Length > 0 && Directory.Exists(steamDir))
+                        {
+                            Println("Trying to reopen friends window...");
+                            int iHandle = FindWindow("SDL_app", friendsString);
+                            if (iHandle > 0)
+                                SendMessage(iHandle, WM_SYSCOMMAND, SC_CLOSE, 0);
+                            else
+                                Println("Can't find friends window.");
+                            Process.Start(steamDir + "\\Steam.exe", @"steam://open/friends/");
+                        }
+
+                        Println("Finished! Put your custom css in " + steamDir + "\\clientui\\friends.custom.css");
+                        Println("Close and reopen your Steam friends window to see changes.");
+                        Println("Run this program again if your changes disappear as it likely means Valve updated the friends css file.");
+                        PromptForExit();
+
                         break;
                     }
                 }
             }
 
-            if (friendscachefilelocation == null || friendscachefilename == null)
+            if (string.IsNullOrEmpty(friendscachefile))
             {
                 if (silent)
                     PromptForExit();
@@ -398,36 +427,6 @@ namespace EnableNewSteamFriendsSkin
                     }
                 }
             }
-
-            Println("Adding import line to friends.css...");
-            string importtext = "@import url(\"https://steamloopback.host/friends.custom.css\");\n";
-            File.WriteAllText(friendscachefilename, importtext + File.ReadAllText(friendscachefilename + "-tmp"));
-
-            Println("Recompressing friends.css...");
-            cachefile = Compress(File.ReadAllBytes(friendscachefilename));
-
-            Println("Overwriting original friends.css...");
-            File.WriteAllBytes(friendscachefilelocation, cachefile);
-
-            Println("Cleaning up...");
-            File.Delete(friendscachefilename);
-            File.Delete(friendscachefilename + "-tmp");
-
-            if (Process.GetProcessesByName("Steam").Length > 0 && Directory.Exists(steamDir))
-            {
-                Println("Trying to reopen friends window...");
-                int iHandle = FindWindow("SDL_app", friendsString);
-                if (iHandle > 0)
-                    SendMessage(iHandle, WM_SYSCOMMAND, SC_CLOSE, 0);
-                else
-                    Println("Can't find friends window.");
-                Process.Start(steamDir + "\\Steam.exe", @"steam://open/friends/");
-            }
-
-            Println("Finished! Put your custom css in " + steamDir + "\\clientui\\friends.custom.css");
-            Println("Close and reopen your Steam friends window to see changes.");
-            Println("Run this program again if your changes disappear as it likely means Valve updated the friends css file.");
-            PromptForExit();
         }
     }
 }
