@@ -415,8 +415,6 @@ namespace EnableNewSteamFriendsSkin
                                 Thread.Sleep(1000);
                         }
 
-                        Thread.Sleep(5000);
-
                         PatchCacheFile();
                     }
                     if (keypressed == "n")
