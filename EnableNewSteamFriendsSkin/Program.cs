@@ -216,6 +216,7 @@ namespace EnableNewSteamFriendsSkin
                 {
                     Thread.Sleep(1000);
                     Process.Start(steamDir + "\\Steam.exe", @"steam://open/friends");
+                    Thread.Sleep(1000);
                     Process.Start(steamDir + "\\Steam.exe", @"steam://friends/status/online");
                     countdown--;
                 }
