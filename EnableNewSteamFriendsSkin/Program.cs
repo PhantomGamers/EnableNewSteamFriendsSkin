@@ -1,5 +1,6 @@
 ﻿using Microsoft.Win32.SafeHandles;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
@@ -10,6 +11,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace EnableNewSteamFriendsSkin
 {
@@ -192,6 +194,13 @@ namespace EnableNewSteamFriendsSkin
             }
         }
 
+        static bool ByteArrayCompare(byte[] b1, byte[] b2)
+        {
+            // Validate buffers are the same length.
+            // This also ensures that the count does not exceed the length of either buffer.  
+            return b1.Length == b2.Length && memcmp(b1, b2, b1.Length) == 0;
+        }
+
         private static void StartAndWaitForSteam()
         {
             if (Process.GetProcessesByName("Steam").Length == 0 && Directory.Exists(steamDir))
@@ -206,6 +215,8 @@ namespace EnableNewSteamFriendsSkin
                 while (!FindFriendsWindow())
                 {
                     Thread.Sleep(1000);
+                    Process.Start(steamDir + "\\Steam.exe", @"steam://open/friends");
+                    Process.Start(steamDir + "\\Steam.exe", @"steam://friends/status/online");
                     countdown--;
                 }
 
@@ -247,7 +258,36 @@ namespace EnableNewSteamFriendsSkin
         {
             if (!silent)
                 Console.WriteLine(message);
+
+            Debug.WriteLine(message);
         }
+
+        private static void ProcessCacheFile(string friendscachefile, byte[] decompressedcachefile)
+        {
+            Println("Adding import line to friends.css...");
+            decompressedcachefile = PrependFile(decompressedcachefile);
+
+            Println("Recompressing friends.css...");
+            byte[] cachefile = Compress(decompressedcachefile);
+
+            Println("Overwriting original friends.css...");
+            File.WriteAllBytes(friendscachefile, cachefile);
+
+            if (Process.GetProcessesByName("Steam").Length > 0 && Directory.Exists(steamDir))
+            {
+                Println("Reloading friends window...");
+                Process.Start(steamDir + "\\Steam.exe", @"steam://friends/status/offline");
+                Thread.Sleep(1000);
+                Process.Start(steamDir + "\\Steam.exe", @"steam://friends/status/online");
+                Thread.Sleep(1000);
+                Process.Start(steamDir + "\\Steam.exe", @"steam://open/friends");
+            }
+
+            Println("Finished! Put your custom css in " + steamDir + "\\clientui\\friends.custom.css");
+            Println("Close and reopen your Steam friends window to see changes.");
+            Println("Run this program again if your changes disappear as it likely means Valve updated the friends css file.");
+            PromptForExit();
+    }
 
         private static void PatchCacheFile()
         {
@@ -262,57 +302,35 @@ namespace EnableNewSteamFriendsSkin
                 Println("Please confirm that Steam is running and that the friends list is open and try again.");
                 PromptForExit();
             }
-            string[] files = Directory.GetFiles(cachepath, "f_*");
-            Println("Found " + files.Length + " possible cache files");
-            if (files.Length == 0)
+            double maxKbFileSize = 100;
+            List<string> validFiles = Directory.EnumerateFiles(cachepath, "f_*", SearchOption.TopDirectoryOnly).Where(file => file.Length / 1024d < maxKbFileSize).ToList();
+            Println("Found " + validFiles.Count() + " possible cache files");
+            if (validFiles.Count() == 0)
             {
                 Println("Cache files have not been generated yet.");
                 Println("Please confirm that Steam is running and that the friends list is open and try again.");
                 PromptForExit();
             }
-            byte[] cachefile;
-            byte[] decompressedcachefile;
             string friendscachefile = null;
 
             Println("Checking cache files for match...");
-            foreach (string s in files)
+            Parallel.ForEach(validFiles, (s, state) =>
             {
-                cachefile = File.ReadAllBytes(s);
+                byte[] cachefile = File.ReadAllBytes(s);
 
-                if (IsGZipHeader(cachefile) && cachefile.Length < 100000)
+                if (IsGZipHeader(cachefile))
                 {
-                    decompressedcachefile = Decompress(cachefile);
-                    if (decompressedcachefile.SequenceEqual(originalcss))
+                    byte[] decompressedcachefile = Decompress(cachefile);
+                    if (ByteArrayCompare(decompressedcachefile, originalcss))
                     {
+                        state.Stop();
                         Println("Success! Matching friends.css found at " + s);
                         friendscachefile = s;
-
-                        Println("Adding import line to friends.css...");
-                        decompressedcachefile = PrependFile(decompressedcachefile);
-
-                        Println("Recompressing friends.css...");
-                        cachefile = Compress(decompressedcachefile);
-
-                        Println("Overwriting original friends.css...");
-                        File.WriteAllBytes(friendscachefile, cachefile);
-
-                        if (Process.GetProcessesByName("Steam").Length > 0 && Directory.Exists(steamDir))
-                        {
-                            Println("Reloading friends window...");
-                            Process.Start(steamDir + "\\Steam.exe", @"steam://friends/status/offline");
-                            Thread.Sleep(1000);
-                            Process.Start(steamDir + "\\Steam.exe", @"steam://friends/status/online");
-                        }
-
-                        Println("Finished! Put your custom css in " + steamDir + "\\clientui\\friends.custom.css");
-                        Println("Close and reopen your Steam friends window to see changes.");
-                        Println("Run this program again if your changes disappear as it likely means Valve updated the friends css file.");
-                        PromptForExit();
-
-                        break;
+                        ProcessCacheFile(friendscachefile, decompressedcachefile);
+                        //Task.Factory.StartNew(() => ProcessCacheFile(friendscachefile, decompressedcachefile));
                     }
                 }
-            }
+            });
 
             if (string.IsNullOrEmpty(friendscachefile))
             {
@@ -387,5 +405,8 @@ namespace EnableNewSteamFriendsSkin
         private const uint GENERIC_WRITE = 0x40000000;
         private const uint FILE_SHARE_WRITE = 0x2;
         private const uint OPEN_EXISTING = 0x3;
+
+        [DllImport("msvcrt.dll", CallingConvention = CallingConvention.Cdecl)]
+        static extern int memcmp(byte[] b1, byte[] b2, long count);
     }
 }
