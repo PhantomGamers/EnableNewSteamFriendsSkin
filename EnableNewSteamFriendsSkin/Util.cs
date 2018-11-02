@@ -4,7 +4,6 @@ using System.IO;
 using System.IO.Compression;
 using System.Reflection;
 using System.Runtime.InteropServices;
-using System.Text;
 
 namespace EnableNewSteamFriendsSkin
 {
@@ -95,7 +94,7 @@ namespace EnableNewSteamFriendsSkin
                         AutoFlush = true
                     };
                     Version ver = Assembly.GetEntryAssembly().GetName().Version;
-                    Console.Title = "Steam Friends Skin Patcher v" + ver.Major + "." + ver.Minor + "." + ver.Build;
+                    Console.Title = "Steam Friends Skin Patcher v" + ver.Major + "." + ver.Minor + "." + ver.Build + "-BETA";
                     Console.SetOut(standardOutput);
                     if (GetConsoleMode(stdHandle, out var cMode))
                         SetConsoleMode(stdHandle, cMode | ENABLE_VIRTUAL_TERMINAL_PROCESSING | DISABLE_NEWLINE_AUTO_RETURN);

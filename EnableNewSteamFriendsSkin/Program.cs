@@ -10,6 +10,8 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using Console = Colorful.Console;
+using Steam4NET;
+using System.Runtime.InteropServices;
 
 namespace EnableNewSteamFriendsSkin
 {
@@ -136,12 +138,107 @@ namespace EnableNewSteamFriendsSkin
         {
             if (Process.GetProcessesByName("Steam").Length == 0 && Directory.Exists(steamDir))
             {
+                Environment.SetEnvironmentVariable("SteamAppId", "000");
+                if (!Steamworks.Load(true))
+                {
+                    Println("Steamworks could not be loaded, falling back to older method...", "warning");
+                    LegacyStartAndWaitForSteam();
+                    return;
+                }
+                ISteamClient017 steamclient = Steamworks.CreateInterface<ISteamClient017>();
+                if (steamclient == null)
+                {
+                    Println("Steamworks could not be loaded, falling back to older method...", "warning");
+                    LegacyStartAndWaitForSteam();
+                    return;
+                }
+                int pipe = steamclient.CreateSteamPipe();
+                if (pipe == 0)
+                {
+                    Println("Starting Steam...");
+                    Process.Start(steamDir + "\\Steam.exe", steamargs);
+                    Println("Waiting for friends list to connect...");
+                    int countdown = timeout;
+                    while (pipe == 0 && countdown != 0)
+                    {
+                        pipe = steamclient.CreateSteamPipe();
+                        Thread.Sleep(100);
+                    }
+                    if (countdown == 0 && pipe == 0)
+                    {
+                        LegacyStartAndWaitForSteam();
+                        return;
+                    }
+                }
+                int user = steamclient.ConnectToGlobalUser(pipe);
+                if (user == 0 || user == -1)
+                {
+                    Println("Steamworks could not be loaded, falling back to older method...", "warning");
+                    LegacyStartAndWaitForSteam();
+                    return;
+                }
+                ISteamFriends015 steamfriends = steamclient.GetISteamFriends<ISteamFriends015>(user, pipe);
+                if (steamfriends == null)
+                {
+                    Println("Steamworks could not be loaded, falling back to older method...", "warning");
+                    LegacyStartAndWaitForSteam();
+                    return;
+                }
+                CallbackMsg_t callbackMsg = new CallbackMsg_t();
+                bool stateChangeDetected = false;
+                while (!stateChangeDetected)
+                {
+                    while (Steamworks.GetCallback(pipe, ref callbackMsg) && !stateChangeDetected)
+                    {
+                        if (callbackMsg.m_iCallback == PersonaStateChange_t.k_iCallback)
+                        {
+                            PersonaStateChange_t onPersonaStateChange = (PersonaStateChange_t)Marshal.PtrToStructure(callbackMsg.m_pubParam, typeof(PersonaStateChange_t));
+                            if (onPersonaStateChange.m_nChangeFlags.HasFlag(EPersonaChange.k_EPersonaChangeComeOnline))
+                            {
+                                stateChangeDetected = true;
+                                Steamworks.FreeLastCallback(pipe);
+                                break;
+                            }
+                        }
+                        Steamworks.FreeLastCallback(pipe);
+                    }
+                    Thread.Sleep(100);
+                }
+                steamclient.BReleaseSteamPipe(pipe);
+                steamclient.BShutdownIfAllPipesClosed();
+            }
+        }
+
+        private static void LegacyStartAndWaitForSteam()
+        {
+            if (Process.GetProcessesByName("Steam").Length == 0 && Directory.Exists(steamDir))
+            {
                 Println("Starting Steam...");
                 Process.Start(steamDir + "\\Steam.exe", steamargs);
                 Println("Waiting for friends list to open...");
                 Println("If friends list does not open automatically, please open manually.");
                 if (friendsString == null)
                     Println("Steam translation file not found, checking for friends class name only.", "warning");
+                int countdown = timeout;
+                while (!FindFriendsWindow())
+                {
+                    Thread.Sleep(1000);
+                    Process.Start(steamDir + "\\Steam.exe", @"steam://open/friends");
+                    Thread.Sleep(1000);
+                    Process.Start(steamDir + "\\Steam.exe", @"steam://friends/status/online");
+                    countdown--;
+                }
+
+                if (countdown == 0)
+                {
+                    Println("Friends list could not be found.", "error");
+                    Println("If your friends list is open, please report this to the developer.", "error");
+                    Println("Otherwise, open your friends list and restart the program.", "error");
+                    PromptForExit();
+                }
+
+            } else if(Directory.Exists(steamDir))
+            {
                 int countdown = timeout;
                 while (!FindFriendsWindow())
                 {
@@ -317,7 +414,6 @@ namespace EnableNewSteamFriendsSkin
                         Println("If Steam is not already patched please clear your Steam cache and try again or contact the developer.", "error");
                         PromptForExit();
                     } else {
-                        Println(keypressed);
                         validresponse = true;
                         if (Process.GetProcessesByName("Steam").Length > 0 && Directory.Exists(steamDir))
                         {
