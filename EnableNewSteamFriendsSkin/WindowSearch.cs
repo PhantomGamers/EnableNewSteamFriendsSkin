@@ -1,18 +1,16 @@
-﻿using System;
-using System.Collections;
+﻿using System.Collections;
 using System.Runtime.InteropServices;
 using System.Text;
 
-namespace Windows
+namespace WindowSearch
 {
-    public class FindWindowLike
+    internal class FindWindowLike
     {
-
-        public class Window
+        internal class Window
         {
-            public string Title;
-            public string Class;
-            public int Handle;
+            internal string Title;
+            internal string Class;
+            internal int Handle;
         }
 
         [DllImport("user32")]
@@ -41,17 +39,13 @@ namespace Windows
 
         public static Window[] Find(int hwndStart, string findText, string findClassName)
         {
-
             ArrayList windows = DoSearch(hwndStart, findText, findClassName);
 
             return (Window[])windows.ToArray(typeof(Window));
-
         } //Find
-
 
         private static ArrayList DoSearch(int hwndStart, string findText, string findClassName)
         {
-
             ArrayList list = new ArrayList();
 
             if (hwndStart == 0)
@@ -61,7 +55,6 @@ namespace Windows
 
             while (hwnd != 0)
             {
-
                 // Recursively search for child windows.
                 list.AddRange(DoSearch(hwnd, findText, findClassName));
 
@@ -92,13 +85,9 @@ namespace Windows
                 }
 
                 hwnd = GetWindow(hwnd, GW_HWNDNEXT);
-
             }
 
             return list;
-
-        } //DoSearch
-
-    } //Class
-
-} //Namespace
+        }
+    }
+}
