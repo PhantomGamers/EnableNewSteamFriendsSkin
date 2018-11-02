@@ -87,6 +87,7 @@ namespace EnableNewSteamFriendsSkin
                     IntPtr stdHandle = CreateFile("CONOUT$", GENERIC_WRITE | GENERIC_READ, FILE_SHARE_WRITE, 0, OPEN_EXISTING, 0, 0);
                     SafeFileHandle safeFileHandle = new SafeFileHandle(stdHandle, true);
                     SetStdHandle(STD_OUTPUT_HANDLE, stdHandle);
+                    var iStdIn = GetStdHandle(STD_INPUT_HANDLE);
                     FileStream fileStream = new FileStream(safeFileHandle, FileAccess.Write);
                     //Encoding encoding = System.Text.Encoding.GetEncoding(MY_CODE_PAGE);
                     StreamWriter standardOutput = new StreamWriter(fileStream)
@@ -94,10 +95,12 @@ namespace EnableNewSteamFriendsSkin
                         AutoFlush = true
                     };
                     Version ver = Assembly.GetEntryAssembly().GetName().Version;
-                    Console.Title = "Steam Friends Skin Patcher v" + ver.Major + "." + ver.Minor + "." + ver.Build; ;
+                    Console.Title = "Steam Friends Skin Patcher v" + ver.Major + "." + ver.Minor + "." + ver.Build;
                     Console.SetOut(standardOutput);
                     if (GetConsoleMode(stdHandle, out var cMode))
-                        SetConsoleMode(stdHandle, cMode | ENABLE_VIRTUAL_TERMINAL_INPUT);
+                        SetConsoleMode(stdHandle, cMode | ENABLE_VIRTUAL_TERMINAL_PROCESSING | DISABLE_NEWLINE_AUTO_RETURN);
+                    if (GetConsoleMode(iStdIn, out uint cModeIn))
+                        SetConsoleMode(iStdIn, cModeIn | ENABLE_VIRTUAL_TERMINAL_INPUT);
                 }
                 catch (Exception) { }
             }
@@ -115,11 +118,16 @@ namespace EnableNewSteamFriendsSkin
         static extern bool SetConsoleMode(IntPtr hConsoleHandle, uint dwMode);
         [DllImport("kernel32.dll")]
         static extern bool SetStdHandle(int nStdHandle, IntPtr hHandle);
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern IntPtr GetStdHandle(int nStdHandle);
 
         private const int MY_CODE_PAGE = 437;
         private const uint GENERIC_WRITE = 0x40000000;
         private const uint GENERIC_READ = 0x80000000;
         private const uint ENABLE_VIRTUAL_TERMINAL_INPUT = 0x0200;
+        private const uint ENABLE_VIRTUAL_TERMINAL_PROCESSING = 0x0004;
+        private const uint DISABLE_NEWLINE_AUTO_RETURN = 0x0008;
+        private const int STD_INPUT_HANDLE = -10;
         private const int STD_OUTPUT_HANDLE = -11;
         private const uint FILE_SHARE_WRITE = 0x2;
         private const uint OPEN_EXISTING = 0x3;

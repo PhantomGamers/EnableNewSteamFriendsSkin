@@ -192,6 +192,12 @@ namespace EnableNewSteamFriendsSkin
             {
                 lock (_MessageLock)
                 {
+                    if (string.IsNullOrEmpty(message))
+                    {
+                        Console.WriteLine();
+                        return;
+                    }
+
                     Color c = Color.White;
                     if (messagetype == "error")
                         c = Color.Red;
@@ -202,7 +208,6 @@ namespace EnableNewSteamFriendsSkin
                     if (messagetype == "success")
                         c = Color.Green;
 
-                    Console.Write(new string(' ', (Console.WindowWidth - message.Length) / 2));
                     Console.WriteLine(message, c);
                 }
             }
@@ -299,16 +304,20 @@ namespace EnableNewSteamFriendsSkin
                 if (silent)
                     PromptForExit();
                 bool validresponse = false;
-                ConsoleKeyInfo cki;
-                string keypressed = null;
                 while (!validresponse)
                 {
                     Println("friends.css location not found, would you like to clear your Steam cache and try again? Y/n", "error");
-                    cki = Console.ReadKey();
-                    keypressed = cki.Key.ToString().ToLower();
+                    var cki = Console.ReadKey();
+                    var keypressed = cki.KeyChar.ToString().ToLower();
                     Println();
-                    if (keypressed != "n")
+                    if (keypressed == "n")
                     {
+                        validresponse = true;
+                        Println("Could not find friends.css", "error");
+                        Println("If Steam is not already patched please clear your Steam cache and try again or contact the developer.", "error");
+                        PromptForExit();
+                    } else {
+                        Println(keypressed);
                         validresponse = true;
                         if (Process.GetProcessesByName("Steam").Length > 0 && Directory.Exists(steamDir))
                         {
@@ -347,12 +356,6 @@ namespace EnableNewSteamFriendsSkin
                         }
 
                         FindCacheFile();
-                    }
-                    if (keypressed == "n")
-                    {
-                        validresponse = true;
-                        Println("Could not find friends.css, please clear your Steam cache and try again or contact the developer.", "error");
-                        PromptForExit();
                     }
                 }
             }
