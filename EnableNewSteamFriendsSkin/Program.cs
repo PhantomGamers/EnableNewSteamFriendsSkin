@@ -50,6 +50,8 @@ namespace EnableNewSteamFriendsSkin
 
         private static void Main(string[] args)
         {
+            if (!IsSingleInstance())
+                return;
             string silentregex = "-s$|--silent$";
             string passregex = "(?<=-p=)(.*)|(?<=--pass=)(.*)";
             string steampathregex = "(?<=-sp=)(.*)|(?<=--steampath=)(.*)";

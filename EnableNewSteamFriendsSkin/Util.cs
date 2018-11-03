@@ -4,6 +4,7 @@ using System.IO;
 using System.IO.Compression;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Threading;
 
 namespace EnableNewSteamFriendsSkin
 {
@@ -94,7 +95,7 @@ namespace EnableNewSteamFriendsSkin
                         AutoFlush = true
                     };
                     Version ver = Assembly.GetEntryAssembly().GetName().Version;
-                    Console.Title = "Steam Friends Skin Patcher v" + ver.Major + "." + ver.Minor + "." + ver.Build + "-BETA";
+                    Console.Title = "Steam Friends Skin Patcher v" + ver.Major + "." + ver.Minor + "." + ver.Build + "-BETA.1";
                     Console.SetOut(standardOutput);
                     if (GetConsoleMode(stdHandle, out var cMode))
                         SetConsoleMode(stdHandle, cMode | ENABLE_VIRTUAL_TERMINAL_PROCESSING | DISABLE_NEWLINE_AUTO_RETURN);
@@ -146,5 +147,29 @@ namespace EnableNewSteamFriendsSkin
         private static extern int Memcmp(byte[] b1, byte[] b2, long count);
 
         #endregion ByteArrayCompare
+
+        #region MutexChecker
+        private static Mutex _m;
+
+        internal static bool IsSingleInstance()
+        {
+            try
+            {
+                // Try to open existing mutex.
+                Mutex.OpenExisting("EnableNewSteamFriendsSkin");
+            }
+            catch
+            {
+                // If exception occurred, there is no such mutex.
+                Program._m = new Mutex(true, "EnableNewSteamFriendsSkin");
+
+                // Only one instance.
+                return true;
+            }
+            // More than one instance.
+            return false;
+        }
+        #endregion MutexChecker
+
     }
 }
