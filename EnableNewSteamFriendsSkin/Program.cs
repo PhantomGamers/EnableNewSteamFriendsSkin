@@ -44,7 +44,7 @@ namespace EnableNewSteamFriendsSkin
         private static readonly string friendsString = FindFriendsListString();
 
         // object to lock when writing to console to maintain thread safety
-        private static object _MessageLock = new object();
+        private static readonly object _MessageLock = new object();
 
         #endregion global variables
 
@@ -342,14 +342,12 @@ namespace EnableNewSteamFriendsSkin
             Println("Overwriting original friends.css...");
             File.WriteAllBytes(friendscachefile, cachefile);
 
-            if (Process.GetProcessesByName("Steam").Length > 0 && Directory.Exists(steamDir))
+            if (Process.GetProcessesByName("Steam").Length > 0 && Directory.Exists(steamDir) && FindFriendsWindow())
             {
                 Println("Reloading friends window...");
                 Process.Start(steamDir + "\\Steam.exe", @"steam://friends/status/offline");
                 Thread.Sleep(1000);
                 Process.Start(steamDir + "\\Steam.exe", @"steam://friends/status/online");
-                Thread.Sleep(1000);
-                Process.Start(steamDir + "\\Steam.exe", @"steam://open/friends");
             }
 
             Println("Finished! Put your custom css in " + steamDir + "\\clientui\\friends.custom.css", "success");
@@ -437,13 +435,11 @@ namespace EnableNewSteamFriendsSkin
                             Println("Shutting down Steam to clear cache...");
                             Process.Start(steamDir + "\\Steam.exe", "-shutdown");
 
-                            int count = 0;
-                            while (Process.GetProcessesByName("Steam").Length > 0 && count <= 10)
-                            {
-                                Thread.Sleep(1000);
-                                count++;
-                            }
-                            if (count > 10)
+                            Stopwatch stopwatch = Stopwatch.StartNew();
+                            while (Process.GetProcessesByName("Steam").Length > 0 && stopwatch.Elapsed.Seconds < 10)
+                                Thread.Sleep(100);
+                            stopwatch.Stop();
+                            if (Process.GetProcessesByName("Steam").Length > 0 && stopwatch.Elapsed.Seconds >= 10)
                             {
                                 Println("Could not successfully shutdown Steam, please manually shutdown Steam and try again.", "error");
                                 PromptForExit();
@@ -465,7 +461,7 @@ namespace EnableNewSteamFriendsSkin
                         {
                             Println("Waiting for cache folder to be created...");
                             while (!Directory.Exists(cachepath))
-                                Thread.Sleep(1000);
+                                Thread.Sleep(100);
                         }
 
                         FindCacheFile();
