@@ -95,7 +95,7 @@ namespace EnableNewSteamFriendsSkin
                         AutoFlush = true
                     };
                     Version ver = Assembly.GetEntryAssembly().GetName().Version;
-                    Console.Title = "Steam Friends Skin Patcher v" + ver.Major + "." + ver.Minor + "." + ver.Build + "-BETA.1";
+                    Console.Title = "Steam Friends Skin Patcher v" + ver.Major + "." + ver.Minor + "." + ver.Build + "-BETA.2";
                     Console.SetOut(standardOutput);
                     if (GetConsoleMode(stdHandle, out var cMode))
                         SetConsoleMode(stdHandle, cMode | ENABLE_VIRTUAL_TERMINAL_PROCESSING | DISABLE_NEWLINE_AUTO_RETURN);
