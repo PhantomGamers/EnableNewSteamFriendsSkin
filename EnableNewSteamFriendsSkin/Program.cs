@@ -96,9 +96,15 @@ namespace EnableNewSteamFriendsSkin
         private static byte[] GetLatestFriendsCSS()
         {
             Uri LatestURI = new Uri("https://google.com/");
-            WebClient downloadFile = new WebClient();
+            WebClient wc = new WebClient();
             ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls | SecurityProtocolType.Tls11 | SecurityProtocolType.Tls12;
-            return downloadFile.DownloadData("https://steamcommunity-a.akamaihd.net/public/css/webui/friends.css");
+
+            string steamChat = wc.DownloadString("https://steam-chat.com/chat/clientui");
+            string eTagRegex = "(?<=<link href=\"https:\\/\\/steamcommunity-a.akamaihd.net\\/public\\/css\\/webui\\/friends.css\\?v=)(.*?)(?=\")";
+            string eTag = Regex.Match(steamChat, eTagRegex).Value;
+            if (!string.IsNullOrEmpty(eTag))
+                return wc.DownloadData("https://steamcommunity-a.akamaihd.net/public/css/webui/friends.css?v="+eTag);
+            return wc.DownloadData("https://steamcommunity-a.akamaihd.net/public/css/webui/friends.css");
         }
 
         private static string FindSteamDir()
