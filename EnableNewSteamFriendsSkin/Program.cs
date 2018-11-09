@@ -25,14 +25,8 @@
         // max time we will wait for steam friends list to be detected in seconds
         private static readonly int Timeout = 300; // 5 minutes
 
-        // title of friends window in set language
-        private static readonly string FriendsString = FindFriendsListString();
-
         // object to lock when writing to console to maintain thread safety
         private static readonly object MessageLock = new object();
-
-        // arguments to be sent to steam
-        private static string steamargs = null;
 
         // location of steam directory
         private static string steamDir = FindSteamDir();
@@ -42,6 +36,12 @@
 
         // location of file containing translations for set language
         private static string steamLangFile = steamDir + "\\friends\\trackerui_" + steamLang + ".txt";
+
+        // title of friends window in set language
+        private static readonly string FriendsString = FindFriendsListString();
+
+        // arguments to be sent to steam
+        private static string steamargs = null;
 
         /// <summary>
         /// Gets or sets a value indicating whether not the program should display a window
@@ -153,12 +153,12 @@
                 tracker = File.ReadAllText(steamLangFile);
             }
 
-            if (tracker != null)
+            if (!string.IsNullOrEmpty(tracker))
             {
                 smatch = Regex.Match(tracker, regex).Value;
             }
 
-            if (smatch != null)
+            if (!string.IsNullOrEmpty(smatch))
             {
                 s = smatch;
             }
@@ -275,7 +275,7 @@
                 Process.Start(steamDir + "\\Steam.exe", steamargs);
                 Println("Waiting for friends list to open...");
                 Println("If friends list does not open automatically, please open manually.");
-                if (FriendsString == null)
+                if (string.IsNullOrEmpty(FriendsString))
                 {
                     Println("Steam translation file not found, checking for friends class name only.", "warning");
                 }
@@ -330,7 +330,7 @@
 
         private static bool FindFriendsWindow()
         {
-            if (WindowSearch.FindWindowLike.Find(0, FriendsString, "SDL_app").Count() > 0)
+            if (!string.IsNullOrEmpty(FriendsString) && WindowSearch.FindWindowLike.Find(0, FriendsString, "SDL_app").Count() > 0)
             {
                 return true;
             }
