@@ -1,35 +1,38 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Drawing;
-using System.IO;
-using System.Linq;
-using System.Net;
-using System.Text;
-using System.Text.RegularExpressions;
-using System.Threading;
-using System.Threading.Tasks;
-using Console = Colorful.Console;
-using Steam4NET;
-using System.Runtime.InteropServices;
-
-namespace EnableNewSteamFriendsSkin
+﻿namespace EnableNewSteamFriendsSkin
 {
+    using System;
+    using System.Collections.Generic;
+    using System.Diagnostics;
+    using System.Drawing;
+    using System.IO;
+    using System.Linq;
+    using System.Net;
+    using System.Runtime.InteropServices;
+    using System.Text;
+    using System.Text.RegularExpressions;
+    using System.Threading;
+    using System.Threading.Tasks;
+
+    using Steam4NET;
+
+    using Console = Colorful.Console;
+
+    /// <summary>
+    /// Main class for finding and patching friends.css
+    /// </summary>
     internal class Program : Util
     {
-        #region global variables
+        // max time we will wait for steam friends list to be detected in seconds
+        private static readonly int Timeout = 300; // 5 minutes
 
-        /*
-        /// max time we will wait for steam friends list to be detected in seconds
-        ///
-        */
-        private static readonly int timeout = 300; // 5 minutes
+        // title of friends window in set language
+        private static readonly string FriendsString = FindFriendsListString();
+
+        // object to lock when writing to console to maintain thread safety
+        private static readonly object MessageLock = new object();
 
         // arguments to be sent to steam
         private static string steamargs = null;
-
-        // whether or not the program should display a window
-        internal static bool silent = false;
 
         // location of steam directory
         private static string steamDir = FindSteamDir();
@@ -40,18 +43,18 @@ namespace EnableNewSteamFriendsSkin
         // location of file containing translations for set language
         private static string steamLangFile = steamDir + "\\friends\\trackerui_" + steamLang + ".txt";
 
-        // title of friends window in set language
-        private static readonly string friendsString = FindFriendsListString();
-
-        // object to lock when writing to console to maintain thread safety
-        private static readonly object _MessageLock = new object();
-
-        #endregion global variables
+        /// <summary>
+        /// Gets or sets a value indicating whether not the program should display a window
+        /// </summary>
+        internal static bool Silent { get; set; } = false;
 
         private static void Main(string[] args)
         {
             if (!IsSingleInstance())
+            {
                 return;
+            }
+
             string silentregex = "-s$|--silent$";
             string passregex = "(?<=-p=)(.*)|(?<=--pass=)(.*)";
             string steampathregex = "(?<=-sp=)(.*)|(?<=--steampath=)(.*)";
@@ -59,10 +62,14 @@ namespace EnableNewSteamFriendsSkin
             foreach (string s in args)
             {
                 if (Regex.Match(s, passregex).Success)
+                {
                     steamargs = Regex.Match(s, passregex).Value;
+                }
 
                 if (Regex.Match(s, steampathregex).Success)
+                {
                     steamDir = Regex.Match(s, steampathregex).Value;
+                }
 
                 if (Regex.Match(s, steamlangregex).Success)
                 {
@@ -71,7 +78,9 @@ namespace EnableNewSteamFriendsSkin
                 }
 
                 if (Regex.Match(s, silentregex).Success)
-                    silent = true;
+                {
+                    Silent = true;
+                }
             }
 
             CreateConsole();
@@ -95,7 +104,7 @@ namespace EnableNewSteamFriendsSkin
 
         private static byte[] GetLatestFriendsCSS()
         {
-            Uri LatestURI = new Uri("https://google.com/");
+            Uri latestURI = new Uri("https://google.com/");
             WebClient wc = new WebClient();
             ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls | SecurityProtocolType.Tls11 | SecurityProtocolType.Tls12;
 
@@ -103,7 +112,10 @@ namespace EnableNewSteamFriendsSkin
             string eTagRegex = "(?<=<link href=\"https:\\/\\/steamcommunity-a.akamaihd.net\\/public\\/css\\/webui\\/friends.css\\?v=)(.*?)(?=\")";
             string eTag = Regex.Match(steamChat, eTagRegex).Value;
             if (!string.IsNullOrEmpty(eTag))
-                return wc.DownloadData("https://steamcommunity-a.akamaihd.net/public/css/webui/friends.css?v="+eTag);
+            {
+                return wc.DownloadData("https://steamcommunity-a.akamaihd.net/public/css/webui/friends.css?v=" + eTag);
+            }
+
             return wc.DownloadData("https://steamcommunity-a.akamaihd.net/public/css/webui/friends.css");
         }
 
@@ -117,6 +129,7 @@ namespace EnableNewSteamFriendsSkin
                 {
                     filePath = regFilePath.ToString().Replace(@"/", @"\");
                 }
+
                 return filePath;
             }
         }
@@ -124,7 +137,9 @@ namespace EnableNewSteamFriendsSkin
         private static string FindSteamLang()
         {
             using (var registryKey = Microsoft.Win32.Registry.CurrentUser.OpenSubKey("SOFTWARE\\Valve\\Steam"))
+            {
                 return registryKey?.GetValue("Language").ToString();
+            }
         }
 
         private static string FindFriendsListString()
@@ -134,11 +149,20 @@ namespace EnableNewSteamFriendsSkin
             string tracker = null;
             string smatch = null;
             if (File.Exists(steamLangFile))
+            {
                 tracker = File.ReadAllText(steamLangFile);
+            }
+
             if (tracker != null)
+            {
                 smatch = Regex.Match(tracker, regex).Value;
+            }
+
             if (smatch != null)
+            {
                 s = smatch;
+            }
+
             return s;
         }
 
@@ -154,6 +178,7 @@ namespace EnableNewSteamFriendsSkin
                     LegacyStartAndWaitForSteam();
                     return;
                 }
+
                 ISteamClient017 steamclient = Steamworks.CreateInterface<ISteamClient017>();
                 if (steamclient == null)
                 {
@@ -161,6 +186,7 @@ namespace EnableNewSteamFriendsSkin
                     LegacyStartAndWaitForSteam();
                     return;
                 }
+
                 int pipe = steamclient.CreateSteamPipe();
                 if (pipe == 0)
                 {
@@ -168,13 +194,14 @@ namespace EnableNewSteamFriendsSkin
                     Process.Start(steamDir + "\\Steam.exe", steamargs);
                     Println("Waiting for friends list to connect...");
                     stopwatch = Stopwatch.StartNew();
-                    while (pipe == 0 && stopwatch.Elapsed.Seconds < timeout)
+                    while (pipe == 0 && stopwatch.Elapsed.Seconds < Timeout)
                     {
                         pipe = steamclient.CreateSteamPipe();
                         Thread.Sleep(100);
                     }
+
                     stopwatch.Stop();
-                    if (stopwatch.Elapsed.Seconds >= timeout && pipe == 0)
+                    if (stopwatch.Elapsed.Seconds >= Timeout && pipe == 0)
                     {
                         Println("Steamworks could not be loaded, falling back to older method...", "warning");
                         steamclient.BShutdownIfAllPipesClosed();
@@ -182,6 +209,7 @@ namespace EnableNewSteamFriendsSkin
                         return;
                     }
                 }
+
                 int user = steamclient.ConnectToGlobalUser(pipe);
                 if (user == 0 || user == -1)
                 {
@@ -191,6 +219,7 @@ namespace EnableNewSteamFriendsSkin
                     LegacyStartAndWaitForSteam();
                     return;
                 }
+
                 ISteamFriends015 steamfriends = steamclient.GetISteamFriends<ISteamFriends015>(user, pipe);
                 if (steamfriends == null)
                 {
@@ -200,12 +229,13 @@ namespace EnableNewSteamFriendsSkin
                     LegacyStartAndWaitForSteam();
                     return;
                 }
-                CallbackMsg_t callbackMsg = new CallbackMsg_t();
+
+                CallbackMsg_t callbackMsg = default(CallbackMsg_t);
                 bool stateChangeDetected = false;
                 stopwatch = Stopwatch.StartNew();
-                while (!stateChangeDetected && stopwatch.Elapsed.Seconds < timeout)
+                while (!stateChangeDetected && stopwatch.Elapsed.Seconds < Timeout)
                 {
-                    while (Steamworks.GetCallback(pipe, ref callbackMsg) && !stateChangeDetected && stopwatch.Elapsed.Seconds < timeout)
+                    while (Steamworks.GetCallback(pipe, ref callbackMsg) && !stateChangeDetected && stopwatch.Elapsed.Seconds < Timeout)
                     {
                         if (callbackMsg.m_iCallback == PersonaStateChange_t.k_iCallback)
                         {
@@ -217,15 +247,18 @@ namespace EnableNewSteamFriendsSkin
                                 break;
                             }
                         }
+
                         Steamworks.FreeLastCallback(pipe);
                     }
+
                     Thread.Sleep(100);
                 }
+
                 stopwatch.Stop();
                 Steamworks.FreeLastCallback(pipe);
                 steamclient.BReleaseSteamPipe(pipe);
                 steamclient.BShutdownIfAllPipesClosed();
-                if (stopwatch.Elapsed.Seconds >= timeout)
+                if (stopwatch.Elapsed.Seconds >= Timeout)
                 {
                     Println("Steamworks could not be loaded, falling back to older method...", "warning");
                     LegacyStartAndWaitForSteam();
@@ -242,37 +275,42 @@ namespace EnableNewSteamFriendsSkin
                 Process.Start(steamDir + "\\Steam.exe", steamargs);
                 Println("Waiting for friends list to open...");
                 Println("If friends list does not open automatically, please open manually.");
-                if (friendsString == null)
+                if (FriendsString == null)
+                {
                     Println("Steam translation file not found, checking for friends class name only.", "warning");
+                }
+
                 Stopwatch stopwatch = Stopwatch.StartNew();
-                while (!FindFriendsWindow() && stopwatch.Elapsed.Seconds < timeout)
+                while (!FindFriendsWindow() && stopwatch.Elapsed.Seconds < Timeout)
                 {
                     Thread.Sleep(1000);
                     Process.Start(steamDir + "\\Steam.exe", @"steam://open/friends");
                     Thread.Sleep(1000);
                     Process.Start(steamDir + "\\Steam.exe", @"steam://friends/status/online");
                 }
+
                 stopwatch.Stop();
-                if (stopwatch.Elapsed.Seconds >= timeout && !FindFriendsWindow())
+                if (stopwatch.Elapsed.Seconds >= Timeout && !FindFriendsWindow())
                 {
                     Println("Friends list could not be found.", "error");
                     Println("If your friends list is open, please report this to the developer.", "error");
                     Println("Otherwise, open your friends list and restart the program.", "error");
                     PromptForExit();
                 }
-
-            } else if(Directory.Exists(steamDir))
+            }
+            else if (Directory.Exists(steamDir))
             {
                 Stopwatch stopwatch = Stopwatch.StartNew();
-                while (!FindFriendsWindow() && stopwatch.Elapsed.Seconds < timeout)
+                while (!FindFriendsWindow() && stopwatch.Elapsed.Seconds < Timeout)
                 {
                     Thread.Sleep(1000);
                     Process.Start(steamDir + "\\Steam.exe", @"steam://open/friends");
                     Thread.Sleep(1000);
                     Process.Start(steamDir + "\\Steam.exe", @"steam://friends/status/online");
                 }
+
                 stopwatch.Stop();
-                if (stopwatch.Elapsed.Seconds >= timeout && !FindFriendsWindow())
+                if (stopwatch.Elapsed.Seconds >= Timeout && !FindFriendsWindow())
                 {
                     Println("Friends list could not be found.", "error");
                     Println("If your friends list is open, please report this to the developer.", "error");
@@ -292,25 +330,32 @@ namespace EnableNewSteamFriendsSkin
 
         private static bool FindFriendsWindow()
         {
-            if (WindowSearch.FindWindowLike.Find(0, friendsString, "SDL_app").Count() > 0)
+            if (WindowSearch.FindWindowLike.Find(0, FriendsString, "SDL_app").Count() > 0)
+            {
                 return true;
+            }
             else
+            {
                 return false;
+            }
         }
 
         private static void PromptForExit()
         {
             Println("Press any key to exit.");
-            if (!silent)
+            if (!Silent)
+            {
                 Console.ReadKey();
+            }
+
             Environment.Exit(0);
         }
 
         private static void Println(string message = null, string messagetype = "info")
         {
-            if (!silent)
+            if (!Silent)
             {
-                lock (_MessageLock)
+                lock (MessageLock)
                 {
                     if (string.IsNullOrEmpty(message))
                     {
@@ -320,21 +365,32 @@ namespace EnableNewSteamFriendsSkin
 
                     Color c = Color.White;
                     if (messagetype == "error")
+                    {
                         c = Color.Red;
+                    }
+
                     if (messagetype == "warning")
+                    {
                         c = Color.Yellow;
+                    }
+
                     if (messagetype == "info")
+                    {
                         c = Color.GhostWhite;
+                    }
+
                     if (messagetype == "success")
+                    {
                         c = Color.Green;
+                    }
 
                     Console.WriteLine(message, c);
                 }
             }
 
-            #if DEBUG
+#if DEBUG
             Debug.WriteLine(message);
-            #endif
+#endif
         }
 
         private static void PatchCacheFile(string friendscachefile, byte[] decompressedcachefile)
@@ -374,13 +430,16 @@ namespace EnableNewSteamFriendsSkin
             {
                 originalcss = GetLatestFriendsCSS();
                 if (originalcss.Length > 0)
+                {
                     Println("Download successful.", "success");
+                }
             }
             catch (Exception e)
             {
                 Println("Error downloading friends.css: " + e, "error");
                 PromptForExit();
             }
+
             Println("Finding list of possible cache files...");
             if (!Directory.Exists(cachepath))
             {
@@ -388,6 +447,7 @@ namespace EnableNewSteamFriendsSkin
                 Println("Please confirm that Steam is running and that the friends list is open and try again.", "error");
                 PromptForExit();
             }
+
             double maxKbFileSize = 100;
             List<string> validFiles = Directory.EnumerateFiles(cachepath, "f_*", SearchOption.TopDirectoryOnly).Where(file => file.Length / 1024d < maxKbFileSize).ToList();
             Println("Found " + validFiles.Count() + " possible cache files");
@@ -397,6 +457,7 @@ namespace EnableNewSteamFriendsSkin
                 Println("Please confirm that Steam is running and that the friends list is open and try again.", "error");
                 PromptForExit();
             }
+
             string friendscachefile = null;
 
             Println("Checking cache files for match...");
@@ -419,8 +480,11 @@ namespace EnableNewSteamFriendsSkin
 
             if (string.IsNullOrEmpty(friendscachefile))
             {
-                if (silent)
+                if (Silent)
+                {
                     PromptForExit();
+                }
+
                 bool validresponse = false;
                 while (!validresponse)
                 {
@@ -434,7 +498,9 @@ namespace EnableNewSteamFriendsSkin
                         Println("Could not find friends.css", "error");
                         Println("If Steam is not already patched please clear your Steam cache and try again or contact the developer.", "error");
                         PromptForExit();
-                    } else {
+                    }
+                    else
+                    {
                         validresponse = true;
                         if (Process.GetProcessesByName("Steam").Length > 0 && Directory.Exists(steamDir))
                         {
@@ -443,7 +509,10 @@ namespace EnableNewSteamFriendsSkin
 
                             Stopwatch stopwatch = Stopwatch.StartNew();
                             while (Process.GetProcessesByName("Steam").Length > 0 && stopwatch.Elapsed.Seconds < 10)
+                            {
                                 Thread.Sleep(100);
+                            }
+
                             stopwatch.Stop();
                             if (Process.GetProcessesByName("Steam").Length > 0 && stopwatch.Elapsed.Seconds >= 10)
                             {
@@ -467,7 +536,9 @@ namespace EnableNewSteamFriendsSkin
                         {
                             Println("Waiting for cache folder to be created...");
                             while (!Directory.Exists(cachepath))
+                            {
                                 Thread.Sleep(100);
+                            }
                         }
 
                         FindCacheFile();
