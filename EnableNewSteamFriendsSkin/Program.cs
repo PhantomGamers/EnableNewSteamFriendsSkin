@@ -364,13 +364,16 @@
                     }
 
                     Color c = Color.White;
+                    string text = null;
                     if (messagetype == "error")
                     {
+                        text = "[ERROR] ";
                         c = Color.Red;
                     }
 
                     if (messagetype == "warning")
                     {
+                        text = "[WARNING] ";
                         c = Color.Yellow;
                     }
 
@@ -384,7 +387,9 @@
                         c = Color.Green;
                     }
 
-                    Console.WriteLine(message, c);
+                    text += message;
+
+                    Console.WriteLine(text, c);
                 }
             }
 
