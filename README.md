@@ -37,7 +37,7 @@ Example:
 --steamlang="english"
 
 # Todo/Bugs
-You tell me?
+* Implement CEF index parsing to better find the correct cache file (Pull Request welcome to anyone who has experience with this)
 
 # Dependencies
 * .NET Framework 4.6
