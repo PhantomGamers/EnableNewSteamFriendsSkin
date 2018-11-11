@@ -409,7 +409,7 @@
             Println("Overwriting original friends.css...");
             File.WriteAllBytes(friendscachefile, cachefile);
 
-            if (Process.GetProcessesByName("Steam").Length > 0 && Directory.Exists(steamDir) && FindFriendsWindow())
+            if (Process.GetProcessesByName("Steam").Length > 0 && Directory.Exists(steamDir) && File.Exists(steamDir + "\\clientui\\friends.custom.css") && FindFriendsWindow())
             {
                 Println("Reloading friends window...");
                 Process.Start(steamDir + "\\Steam.exe", @"steam://friends/status/offline");
