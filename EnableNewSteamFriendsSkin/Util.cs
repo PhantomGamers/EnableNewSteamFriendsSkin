@@ -54,7 +54,7 @@
                 using (GZipStream gzip = new GZipStream(
                     memory,
                     CompressionMode.Compress,
-                    true))
+                    false))
                 {
                     gzip.Write(raw, 0, raw.Length);
                 }
@@ -118,7 +118,7 @@
                         AutoFlush = true
                     };
                     Version ver = Assembly.GetEntryAssembly().GetName().Version;
-                    Console.Title = "Steam Friends Skin Patcher v" + ver.Major + "." + ver.Minor + "." + ver.Build + "-BETA.2";
+                    Console.Title = "Steam Friends Skin Patcher v" + ver.Major + "." + ver.Minor + "." + ver.Build + "-BETA.3-TEST";
                     Console.SetOut(standardOutput);
                     if (GetConsoleMode(stdHandle, out var cMode))
                     {

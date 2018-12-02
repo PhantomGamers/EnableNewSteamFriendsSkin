@@ -5,6 +5,7 @@
     using System.Diagnostics;
     using System.Drawing;
     using System.IO;
+    using System.IO.Compression;
     using System.Linq;
     using System.Net;
     using System.Runtime.InteropServices;
@@ -42,6 +43,9 @@
 
         // arguments to be sent to steam
         private static string steamargs = null;
+
+        // friends.css etag
+        private static string etag = null;
 
         /// <summary>
         /// Gets or sets a value indicating whether not the program should display a window
@@ -113,6 +117,7 @@
             string eTag = Regex.Match(steamChat, eTagRegex).Value;
             if (!string.IsNullOrEmpty(eTag))
             {
+                etag = "?v=" + eTag;
                 return wc.DownloadData("https://steamcommunity-a.akamaihd.net/public/css/webui/friends.css?v=" + eTag);
             }
 
@@ -322,7 +327,8 @@
 
         private static byte[] PrependFile(byte[] file)
         {
-            string appendText = "@import url(\"https://steamloopback.host/friends.custom.css\");\n";
+            // string appendText = "@import url(\"https://steamloopback.host/friends.custom.css\");\n";
+            string appendText = "@import url(\"https://steamcommunity-a.akamaihd.net/public/css/webui/friends.css\");\n@import url(\"https://steamloopback.host/friends.custom.css\");\n";
             byte[] append = Encoding.ASCII.GetBytes(appendText);
             byte[] output = append.Concat(file).ToArray();
             return output;
@@ -404,10 +410,12 @@
             decompressedcachefile = PrependFile(decompressedcachefile);
 
             Println("Recompressing friends.css...");
-            byte[] cachefile = Compress(decompressedcachefile);
-
-            Println("Overwriting original friends.css...");
-            File.WriteAllBytes(friendscachefile, cachefile);
+            using (FileStream file = new FileStream(friendscachefile, FileMode.Create))
+            using (GZipStream gzip = new GZipStream(file, CompressionMode.Compress))
+            {
+                Println("Overwriting original friends.css...");
+                gzip.Write(decompressedcachefile, 0, decompressedcachefile.Length);
+            }
 
             if (Process.GetProcessesByName("Steam").Length > 0 && Directory.Exists(steamDir) && File.Exists(steamDir + "\\clientui\\friends.custom.css") && FindFriendsWindow())
             {
