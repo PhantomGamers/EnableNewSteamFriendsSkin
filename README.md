@@ -37,7 +37,8 @@ Example:
 --steamlang="english"
 
 # Todo/Bugs
-* Implement CEF index parsing to better find the correct cache file (Pull Request welcome to anyone who has experience with this)
+* Implement CEF index parsing to better find the correct cache file (Pull Request welcome to anyone who has experience with this)  
+* Recompress the CSS file with a word size of 24 to fix corruption issues -- Dotnet might not support this so we may have to bundle a portable 7zip exe or something
 
 # Dependencies
 * .NET Framework 4.6
