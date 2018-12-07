@@ -3,7 +3,6 @@
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
-    using System.Drawing;
     using System.IO;
     using System.Linq;
     using System.Net;
@@ -15,7 +14,6 @@
 
     using Steam4NET;
 
-    using Console = Colorful.Console;
     using GZipStream = Ionic.Zlib.GZipStream;
 
     /// <summary>
@@ -370,33 +368,30 @@
                         return;
                     }
 
-                    Color c = Color.White;
                     string text = null;
                     if (messagetype == "error")
                     {
-                        text = "[ERROR] ";
-                        c = Color.Red;
+                        text = "\u001b[91m[ERROR] ";
                     }
 
                     if (messagetype == "warning")
                     {
-                        text = "[WARNING] ";
-                        c = Color.Yellow;
+                        text = "\u001b[43m[WARNING] \u001b[97m";
                     }
 
                     if (messagetype == "info")
                     {
-                        c = Color.GhostWhite;
+                        text = "\u001b[97m";
                     }
 
                     if (messagetype == "success")
                     {
-                        c = Color.Green;
+                        text = "\u001b[92m";
                     }
 
                     text += message;
 
-                    Console.WriteLine(text, c);
+                    Console.WriteLine(text + "\u001b[97m");
                 }
             }
 
