@@ -2,12 +2,13 @@
 {
     using System;
     using System.IO;
-    using System.IO.Compression;
     using System.Reflection;
     using System.Runtime.InteropServices;
     using System.Threading;
 
     using Microsoft.Win32.SafeHandles;
+
+    using GZipStream = Ionic.Zlib.GZipStream;
 
     /// <summary>
     /// General utility functions
@@ -41,29 +42,6 @@
         }
 
         /// <summary>
-        /// Compresses byte array to new byte array.
-        /// </summary>
-        /// <param name="raw">The raw byte array to compress</param>
-        /// <returns>
-        /// Returns a compressed byte array
-        /// </returns>
-        internal static byte[] Compress(byte[] raw)
-        {
-            using (MemoryStream memory = new MemoryStream())
-            {
-                using (GZipStream gzip = new GZipStream(
-                    memory,
-                    CompressionMode.Compress,
-                    false))
-                {
-                    gzip.Write(raw, 0, raw.Length);
-                }
-
-                return memory.ToArray();
-            }
-        }
-
-        /// <summary>
         /// Decompresses byte array to new byte array.
         /// </summary>
         /// <param name="gzip">Gzipped byte array to decompress</param>
@@ -74,7 +52,7 @@
             // ... Then create a buffer and write into while reading from the GZIP stream.
             using (GZipStream stream = new GZipStream(
                 new MemoryStream(gzip),
-                CompressionMode.Decompress))
+                Ionic.Zlib.CompressionMode.Decompress))
             {
                 const int size = 4096;
                 byte[] buffer = new byte[size];
@@ -118,7 +96,7 @@
                         AutoFlush = true
                     };
                     Version ver = Assembly.GetEntryAssembly().GetName().Version;
-                    Console.Title = "Steam Friends Skin Patcher v" + ver.Major + "." + ver.Minor + "." + ver.Build + "-BETA.3-TEST";
+                    Console.Title = "Steam Friends Skin Patcher v" + ver.Major + "." + ver.Minor + "." + ver.Build + "-BETA.3";
                     Console.SetOut(standardOutput);
                     if (GetConsoleMode(stdHandle, out var cMode))
                     {

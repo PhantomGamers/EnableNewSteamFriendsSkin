@@ -5,7 +5,6 @@
     using System.Diagnostics;
     using System.Drawing;
     using System.IO;
-    using System.IO.Compression;
     using System.Linq;
     using System.Net;
     using System.Runtime.InteropServices;
@@ -17,6 +16,7 @@
     using Steam4NET;
 
     using Console = Colorful.Console;
+    using GZipStream = Ionic.Zlib.GZipStream;
 
     /// <summary>
     /// Main class for finding and patching friends.css
@@ -327,8 +327,9 @@
 
         private static byte[] PrependFile(byte[] file)
         {
-            // string appendText = "@import url(\"https://steamloopback.host/friends.custom.css\");\n";
-            string appendText = "@import url(\"https://steamcommunity-a.akamaihd.net/public/css/webui/friends.css\");\n@import url(\"https://steamloopback.host/friends.custom.css\");\n";
+            string appendText = "@import url(\"https://steamloopback.host/friends.custom.css\");\n";
+
+            // string appendText = "@import url(\"https://steamcommunity-a.akamaihd.net/public/css/webui/friends.css\");\n@import url(\"https://steamloopback.host/friends.custom.css\");\n";
             byte[] append = Encoding.ASCII.GetBytes(appendText);
             byte[] output = append.Concat(file).ToArray();
             return output;
@@ -411,7 +412,7 @@
 
             Println("Recompressing friends.css...");
             using (FileStream file = new FileStream(friendscachefile, FileMode.Create))
-            using (GZipStream gzip = new GZipStream(file, CompressionMode.Compress))
+            using (GZipStream gzip = new GZipStream(file, Ionic.Zlib.CompressionMode.Compress, Ionic.Zlib.CompressionLevel.BestCompression))
             {
                 Println("Overwriting original friends.css...");
                 gzip.Write(decompressedcachefile, 0, decompressedcachefile.Length);
