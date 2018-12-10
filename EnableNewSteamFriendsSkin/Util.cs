@@ -96,7 +96,7 @@
                         AutoFlush = true
                     };
                     Version ver = Assembly.GetEntryAssembly().GetName().Version;
-                    Console.Title = "Steam Friends Skin Patcher v" + ver.Major + "." + ver.Minor + "." + ver.Build + "-BETA.3";
+                    Console.Title = $"Steam Friends Skin Patcher v{ver.Major}.{ver.Minor}{(ver.Build > 0 ? ("." + ver.Build) : string.Empty)}";
                     Console.SetOut(standardOutput);
                     if (GetConsoleMode(stdHandle, out var cMode))
                     {

@@ -6,6 +6,7 @@
     using System.IO;
     using System.Linq;
     using System.Net;
+    using System.Reflection;
     using System.Runtime.InteropServices;
     using System.Text;
     using System.Text.RegularExpressions;
@@ -99,6 +100,9 @@
                 Println("If your language is english this would be -sl=\"english\"", "warning");
             }
 
+            Task checkForUpdate = new Task(() => { UpdateChecker(); });
+            checkForUpdate.Start();
+
             StartAndWaitForSteam();
 
             FindCacheFile();
@@ -120,6 +124,34 @@
             }
 
             return wc.DownloadData("https://steamcommunity-a.akamaihd.net/public/css/webui/friends.css");
+        }
+
+        private static bool UpdateChecker()
+        {
+            Uri latestURI = new Uri("https://www.google.com/");
+            WebClient wc = new WebClient();
+            ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls | SecurityProtocolType.Tls11 | SecurityProtocolType.Tls12;
+
+            wc.Headers.Add("user-agent", "EnableNewSteamFriendsSkin");
+            string latestver = wc.DownloadString("https://api.github.com/repos/phantomgamers/enablenewsteamfriendsskin/releases/latest");
+            string verregex = "(?<=\"tag_name\":\")(.*?)(?=\")";
+            string latestvervalue = Regex.Match(latestver, verregex).Value;
+            if (!string.IsNullOrEmpty(latestvervalue))
+            {
+                Version localver = Assembly.GetEntryAssembly().GetName().Version;
+                Version remotever = new Version(latestvervalue);
+                if (remotever > localver)
+                {
+                    if (System.Windows.Forms.MessageBox.Show("Update available. Download now?", "Update Available", System.Windows.Forms.MessageBoxButtons.YesNo) == System.Windows.Forms.DialogResult.Yes)
+                    {
+                        Process.Start("https://github.com/PhantomGamers/EnableNewSteamFriendsSkin/releases/latest");
+                    }
+
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private static string FindSteamDir()
