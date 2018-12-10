@@ -38,7 +38,7 @@ Example:
 
 # Todo/Bugs
 * Implement CEF index parsing to better find the correct cache file (Pull Request welcome to anyone who has experience with this)  
-* Recompress the CSS file with a word size of 24 to fix corruption issues -- Dotnet might not support this so we may have to bundle a portable 7zip exe or something
+* <del>Recompress the CSS file with a word size of 24 to fix corruption issues -- Dotnet might not support this so we may have to bundle a portable 7zip exe or something</del> **Done**
 
 # Dependencies
 * .NET Framework 4.6
@@ -49,3 +49,4 @@ Example:
 * @henrikx for Steam directory detection code.
 * Sam Allen of Dot Net Perls for GZIP compression, decompression, and detection code.
 * Bob Learned of Experts Exchange for FindWindowLike code.
+* [DotNetZip for the improved GZipStream method.](https://archive.codeplex.com/?p=dotnetzip)
