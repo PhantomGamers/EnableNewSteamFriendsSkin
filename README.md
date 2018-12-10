@@ -45,6 +45,7 @@ Example:
 
 # Credits
 * Darth from the Steam community forums for the method.
+* [SteamRE for Steam4NET](https://github.com/SteamRE/Steam4NET)
 * @henrikx for Steam directory detection code.
 * Sam Allen of Dot Net Perls for GZIP compression, decompression, and detection code.
 * Bob Learned of Experts Exchange for FindWindowLike code.
