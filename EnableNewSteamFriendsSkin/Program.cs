@@ -22,6 +22,10 @@
     /// </summary>
     internal class Program : Util
     {
+        // Declare Steam Client Variables
+        private static ISteamClient017 steamclient;
+        private static ISteamFriends015 steamfriends;
+
         // max time we will wait for steam friends list to be detected in seconds
         private static readonly int Timeout = 300; // 5 minutes
 
@@ -203,102 +207,111 @@
 
         private static void StartAndWaitForSteam()
         {
-            if (Process.GetProcessesByName("Steam").Length == 0 && Directory.Exists(steamDir))
+            try
             {
-                Environment.SetEnvironmentVariable("SteamAppId", "000");
-                Stopwatch stopwatch = null;
-                if (!Steamworks.Load(true))
+                if (Process.GetProcessesByName("Steam").Length == 0 && Directory.Exists(steamDir))
                 {
-                    Println("Steamworks could not be loaded, falling back to older method...", "warning");
-                    LegacyStartAndWaitForSteam();
-                    return;
-                }
-
-                ISteamClient017 steamclient = Steamworks.CreateInterface<ISteamClient017>();
-                if (steamclient == null)
-                {
-                    Println("Steamworks could not be loaded, falling back to older method...", "warning");
-                    LegacyStartAndWaitForSteam();
-                    return;
-                }
-
-                int pipe = steamclient.CreateSteamPipe();
-                if (pipe == 0)
-                {
-                    Println("Starting Steam...");
-                    Process.Start(steamDir + "\\Steam.exe", steamargs);
-                    Println("Waiting for friends list to connect...");
-                    stopwatch = Stopwatch.StartNew();
-                    while (pipe == 0 && stopwatch.Elapsed.Seconds < Timeout)
-                    {
-                        pipe = steamclient.CreateSteamPipe();
-                        Thread.Sleep(100);
-                    }
-
-                    stopwatch.Stop();
-                    if (stopwatch.Elapsed.Seconds >= Timeout && pipe == 0)
+                    Environment.SetEnvironmentVariable("SteamAppId", "000");
+                    Stopwatch stopwatch = null;
+                    if (!Steamworks.Load(true))
                     {
                         Println("Steamworks could not be loaded, falling back to older method...", "warning");
+                        LegacyStartAndWaitForSteam();
+                        return;
+                    }
+
+                    steamclient = Steamworks.CreateInterface<ISteamClient017>();
+
+                    if (steamclient == null)
+                    {
+                        Println("Steamworks could not be loaded, falling back to older method...", "warning");
+                        LegacyStartAndWaitForSteam();
+                        return;
+                    }
+
+                    int pipe = steamclient.CreateSteamPipe();
+                    if (pipe == 0)
+                    {
+                        Println("Starting Steam...");
+                        Process.Start(steamDir + "\\Steam.exe", steamargs);
+                        Println("Waiting for friends list to connect...");
+                        stopwatch = Stopwatch.StartNew();
+                        while (pipe == 0 && stopwatch.Elapsed.Seconds < Timeout)
+                        {
+                            pipe = steamclient.CreateSteamPipe();
+                            Thread.Sleep(100);
+                        }
+
+                        stopwatch.Stop();
+                        if (stopwatch.Elapsed.Seconds >= Timeout && pipe == 0)
+                        {
+                            Println("Steamworks could not be loaded, falling back to older method...", "warning");
+                            steamclient.BShutdownIfAllPipesClosed();
+                            LegacyStartAndWaitForSteam();
+                            return;
+                        }
+                    }
+
+                    int user = steamclient.ConnectToGlobalUser(pipe);
+                    if (user == 0 || user == -1)
+                    {
+                        Println("Steamworks could not be loaded, falling back to older method...", "warning");
+                        steamclient.BReleaseSteamPipe(pipe);
                         steamclient.BShutdownIfAllPipesClosed();
                         LegacyStartAndWaitForSteam();
                         return;
                     }
-                }
 
-                int user = steamclient.ConnectToGlobalUser(pipe);
-                if (user == 0 || user == -1)
-                {
-                    Println("Steamworks could not be loaded, falling back to older method...", "warning");
-                    steamclient.BReleaseSteamPipe(pipe);
-                    steamclient.BShutdownIfAllPipesClosed();
-                    LegacyStartAndWaitForSteam();
-                    return;
-                }
-
-                ISteamFriends015 steamfriends = steamclient.GetISteamFriends<ISteamFriends015>(user, pipe);
-                if (steamfriends == null)
-                {
-                    Println("Steamworks could not be loaded, falling back to older method...", "warning");
-                    steamclient.BReleaseSteamPipe(pipe);
-                    steamclient.BShutdownIfAllPipesClosed();
-                    LegacyStartAndWaitForSteam();
-                    return;
-                }
-
-                CallbackMsg_t callbackMsg = default(CallbackMsg_t);
-                bool stateChangeDetected = false;
-                stopwatch = Stopwatch.StartNew();
-                while (!stateChangeDetected && stopwatch.Elapsed.Seconds < Timeout)
-                {
-                    while (Steamworks.GetCallback(pipe, ref callbackMsg) && !stateChangeDetected && stopwatch.Elapsed.Seconds < Timeout)
+                    steamfriends = steamclient.GetISteamFriends<ISteamFriends015>(user, pipe);
+                    if (steamfriends == null)
                     {
-                        if (callbackMsg.m_iCallback == PersonaStateChange_t.k_iCallback)
-                        {
-                            PersonaStateChange_t onPersonaStateChange = (PersonaStateChange_t)Marshal.PtrToStructure(callbackMsg.m_pubParam, typeof(PersonaStateChange_t));
-                            if (onPersonaStateChange.m_nChangeFlags.HasFlag(EPersonaChange.k_EPersonaChangeComeOnline))
-                            {
-                                stateChangeDetected = true;
-                                Println("Friends list connected!", "success");
-                                break;
-                            }
-                        }
-
-                        Steamworks.FreeLastCallback(pipe);
+                        Println("Steamworks could not be loaded, falling back to older method...", "warning");
+                        steamclient.BReleaseSteamPipe(pipe);
+                        steamclient.BShutdownIfAllPipesClosed();
+                        LegacyStartAndWaitForSteam();
+                        return;
                     }
 
-                    Thread.Sleep(100);
-                }
+                    CallbackMsg_t callbackMsg = default(CallbackMsg_t);
+                    bool stateChangeDetected = false;
+                    stopwatch = Stopwatch.StartNew();
+                    while (!stateChangeDetected && stopwatch.Elapsed.Seconds < Timeout)
+                    {
+                        while (Steamworks.GetCallback(pipe, ref callbackMsg) && !stateChangeDetected && stopwatch.Elapsed.Seconds < Timeout)
+                        {
+                            if (callbackMsg.m_iCallback == PersonaStateChange_t.k_iCallback)
+                            {
+                                PersonaStateChange_t onPersonaStateChange = (PersonaStateChange_t)Marshal.PtrToStructure(callbackMsg.m_pubParam, typeof(PersonaStateChange_t));
+                                if (onPersonaStateChange.m_nChangeFlags.HasFlag(EPersonaChange.k_EPersonaChangeComeOnline))
+                                {
+                                    stateChangeDetected = true;
+                                    Println("Friends list connected!", "success");
+                                    break;
+                                }
+                            }
 
-                stopwatch.Stop();
-                Steamworks.FreeLastCallback(pipe);
-                steamclient.BReleaseSteamPipe(pipe);
-                steamclient.BShutdownIfAllPipesClosed();
-                if (stopwatch.Elapsed.Seconds >= Timeout)
-                {
-                    Println("Steamworks could not be loaded, falling back to older method...", "warning");
-                    LegacyStartAndWaitForSteam();
-                    return;
+                            Steamworks.FreeLastCallback(pipe);
+                        }
+
+                        Thread.Sleep(100);
+                    }
+
+                    stopwatch.Stop();
+                    Steamworks.FreeLastCallback(pipe);
+                    steamclient.ReleaseUser(pipe, user);
+                    steamclient.BReleaseSteamPipe(pipe);
+                    steamclient.BShutdownIfAllPipesClosed();
+                    if (stopwatch.Elapsed.Seconds >= Timeout)
+                    {
+                        Println("Steamworks could not be loaded, falling back to older method...", "warning");
+                        LegacyStartAndWaitForSteam();
+                        return;
+                    }
                 }
+            }
+            catch (ArgumentException)
+            {
+                throw;
             }
         }
 
