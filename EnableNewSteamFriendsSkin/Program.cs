@@ -548,6 +548,12 @@
                 while (!validresponse)
                 {
                     Println("friends.css location not found, would you like to clear your Steam cache and try again? Y/n", "error");
+
+                    if (!Silent)
+                    {
+                        Console.Write("\u001b[97m> ");
+                    }
+
                     var cki = Console.ReadKey();
                     var keypressed = cki.KeyChar.ToString().ToLower();
                     Println();
