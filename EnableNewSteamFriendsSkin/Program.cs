@@ -445,6 +445,11 @@
                 gzip.Write(decompressedcachefile, 0, decompressedcachefile.Length);
             }
 
+            if (!File.Exists(steamDir + "\\clientui\\friends.custom.css"))
+            {
+                File.Create(steamDir + "\\clientui\\friends.custom.css").Dispose();
+            }
+
             if (Process.GetProcessesByName("Steam").Length > 0 && Directory.Exists(steamDir) && File.Exists(steamDir + "\\clientui\\friends.custom.css") && FindFriendsWindow())
             {
                 Println("Reloading friends window...");
