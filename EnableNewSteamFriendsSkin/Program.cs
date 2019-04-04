@@ -521,7 +521,13 @@
             }
 
             double maxKbFileSize = 100;
-            List<string> validFiles = Directory.EnumerateFiles(cachepath, "f_*", SearchOption.TopDirectoryOnly).Where(file => file.Length / 1024d < maxKbFileSize).ToList();
+
+            // List<string> validFiles = Directory.EnumerateFiles(cachepath, "f_*", SearchOption.TopDirectoryOnly).Where(file => file.Length / 1024d < maxKbFileSize).ToList();
+            var validFiles = new DirectoryInfo(cachepath).EnumerateFiles("f_*", SearchOption.TopDirectoryOnly)
+                .Where(f => f.Length / 1024d < maxKbFileSize)
+                .OrderByDescending(f => f.LastWriteTime)
+                .Select(f => f.FullName)
+                .ToList();
             Println("Found " + validFiles.Count() + " possible cache files");
             if (validFiles.Count() == 0)
             {
@@ -540,7 +546,7 @@
                 if (IsGZipHeader(cachefile))
                 {
                     byte[] decompressedcachefile = Decompress(cachefile);
-                    if (ByteArrayCompare(decompressedcachefile, originalcss))
+                    if (decompressedcachefile.Length == originalcss.Length && ByteArrayCompare(decompressedcachefile, originalcss))
                     {
                         state.Stop();
                         Println("Success! Matching friends.css found at " + s, "success");
