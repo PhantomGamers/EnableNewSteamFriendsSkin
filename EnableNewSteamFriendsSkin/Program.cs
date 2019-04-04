@@ -28,6 +28,9 @@
         private static ISteamFriends015 steamfriends;
         private static bool firstRun = false;
 
+        // Update Checker
+        private static Task checkForUpdate = new Task(() => { UpdateChecker(); });
+
         // max time we will wait for steam friends list to be detected in seconds
         private static readonly int Timeout = 300; // 5 minutes
 
@@ -106,7 +109,6 @@
                 Println("If your language is english this would be -sl=\"english\"", "warning");
             }
 
-            Task checkForUpdate = new Task(() => { UpdateChecker(); });
             checkForUpdate.Start();
 
             StartAndWaitForSteam();
@@ -148,7 +150,7 @@
                 Version remotever = new Version(latestvervalue);
                 if (remotever > localver)
                 {
-                    if (System.Windows.Forms.MessageBox.Show("Update available. Download now?", "Update Available", System.Windows.Forms.MessageBoxButtons.YesNo) == System.Windows.Forms.DialogResult.Yes)
+                    if (System.Windows.Forms.MessageBox.Show("Update available. Download now?", "Steam Friends Skin Patcher Update Available", System.Windows.Forms.MessageBoxButtons.YesNo) == System.Windows.Forms.DialogResult.Yes)
                     {
                         Process.Start("https://github.com/PhantomGamers/EnableNewSteamFriendsSkin/releases/latest");
                     }
@@ -401,7 +403,15 @@
                 Console.ReadKey();
             }
 
-            Environment.Exit(0);
+            while (true)
+            {
+                if (checkForUpdate.IsCompleted || checkForUpdate.IsCanceled || checkForUpdate.IsFaulted)
+                {
+                    Environment.Exit(0);
+                }
+
+                Thread.Sleep(1000);
+            }
         }
 
         private static void Println(string message = null, string messagetype = "info")
