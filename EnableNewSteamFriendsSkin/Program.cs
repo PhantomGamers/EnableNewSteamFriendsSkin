@@ -122,7 +122,7 @@
             WebClient wc = new WebClient();
             ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls | SecurityProtocolType.Tls11 | SecurityProtocolType.Tls12;
 
-            string steamChat = wc.DownloadString("https://steam-chat.com/chat/clientui");
+            string steamChat = wc.DownloadString("https://steam-chat.com/chat/clientui/?l=&build=&cc");
             string eTagRegex = "(?<=<link href=\"https:\\/\\/steamcommunity-a.akamaihd.net\\/public\\/css\\/webui\\/friends.css\\?v=)(.*?)(?=\")";
             string eTag = Regex.Match(steamChat, eTagRegex).Value;
             if (!string.IsNullOrEmpty(eTag))
