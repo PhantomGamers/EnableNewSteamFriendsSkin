@@ -124,11 +124,10 @@
 
             string steamChat = wc.DownloadString("https://steam-chat.com/chat/clientui/?l=&build=&cc");
             string eTagRegex = "(?<=<link href=\"https:\\/\\/steamcommunity-a.akamaihd.net\\/public\\/css\\/webui\\/friends.css\\?v=)(.*?)(?=\")";
-            string eTag = Regex.Match(steamChat, eTagRegex).Value;
-            if (!string.IsNullOrEmpty(eTag))
+            etag = Regex.Match(steamChat, eTagRegex).Value;
+            if (!string.IsNullOrEmpty(etag))
             {
-                etag = "?v=" + eTag;
-                return wc.DownloadData("https://steamcommunity-a.akamaihd.net/public/css/webui/friends.css?v=" + eTag);
+                return wc.DownloadData("https://steamcommunity-a.akamaihd.net/public/css/webui/friends.css?v=" + etag);
             }
 
             return wc.DownloadData("https://steamcommunity-a.akamaihd.net/public/css/webui/friends.css");
@@ -375,11 +374,13 @@
 
         private static byte[] PrependFile(byte[] file)
         {
-            string appendText = "@import url(\"https://steamloopback.host/friends.custom.css\");\n";
+            // string appendText = "@import url(\"https://steamloopback.host/friends.custom.css\");\n";
+            string appendText = "@import url(\"https://steamloopback.host/friends.original.css\");\n@import url(\"https://steamloopback.host/friends.custom.css\");\n{";
 
             // string appendText = "@import url(\"https://steamcommunity-a.akamaihd.net/public/css/webui/friends.css\");\n@import url(\"https://steamloopback.host/friends.custom.css\");\n";
             byte[] append = Encoding.ASCII.GetBytes(appendText);
-            byte[] output = append.Concat(file).ToArray();
+
+            byte[] output = append.Concat(file).Concat(Encoding.ASCII.GetBytes("}")).ToArray();
             return output;
         }
 
@@ -548,6 +549,7 @@
                     {
                         state.Stop();
                         Println("Success! Matching friends.css found at " + s, "success");
+                        File.WriteAllBytes(steamDir + "\\clientui\\friends.original.css", Encoding.ASCII.GetBytes("/*" + etag + "*/\n").Concat(decompressedcachefile).ToArray());
                         friendscachefile = s;
                         PatchCacheFile(friendscachefile, decompressedcachefile);
                     }
