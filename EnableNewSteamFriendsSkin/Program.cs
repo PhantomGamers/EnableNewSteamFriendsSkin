@@ -465,7 +465,7 @@
 
             Println("Recompressing friends.css...");
             using (FileStream file = new FileStream(friendscachefile, FileMode.Create))
-            using (GZipStream gzip = new GZipStream(file, Ionic.Zlib.CompressionMode.Compress, Ionic.Zlib.CompressionLevel.BestCompression))
+            using (GZipStream gzip = new GZipStream(file, Ionic.Zlib.CompressionMode.Compress, Ionic.Zlib.CompressionLevel.Level7))
             {
                 Println("Overwriting original friends.css...");
                 gzip.Write(decompressedcachefile, 0, decompressedcachefile.Length);
@@ -520,11 +520,9 @@
                 PromptForExit();
             }
 
-            double maxKbFileSize = 100;
-
             // List<string> validFiles = Directory.EnumerateFiles(cachepath, "f_*", SearchOption.TopDirectoryOnly).Where(file => file.Length / 1024d < maxKbFileSize).ToList();
             var validFiles = new DirectoryInfo(cachepath).EnumerateFiles("f_*", SearchOption.TopDirectoryOnly)
-                .Where(f => f.Length / 1024d < maxKbFileSize)
+                .Where(f => f.Length <= originalcss.Length)
                 .OrderByDescending(f => f.LastWriteTime)
                 .Select(f => f.FullName)
                 .ToList();
