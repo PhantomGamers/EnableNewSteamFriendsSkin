@@ -1,7 +1,6 @@
 ﻿namespace EnableNewSteamFriendsSkin
 {
     using System;
-    using System.Collections.Generic;
     using System.Diagnostics;
     using System.IO;
     using System.Linq;
@@ -424,6 +423,7 @@
 
         private static void Println(string message = null, string messagetype = "info")
         {
+            int releaseId = int.Parse(Microsoft.Win32.Registry.GetValue(@"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion", "ReleaseId", 0).ToString());
             if (!Silent)
             {
                 lock (MessageLock)
@@ -434,30 +434,67 @@
                         return;
                     }
 
-                    string text = null;
+                    string text = string.Empty;
                     if (messagetype == "error")
                     {
-                        text = "\u001b[91m[ERROR] ";
+                        if (releaseId >= 1511)
+                        {
+                            Console.Write("\u001b[91m[ERROR] ");
+                        }
+                        else
+                        {
+                            Console.ForegroundColor = ConsoleColor.Red;
+                            Console.Write("[ERROR] ");
+                        }
                     }
 
                     if (messagetype == "warning")
                     {
-                        text = "\u001b[93m[WARNING] \u001b[97m";
+                        if (releaseId >= 1511)
+                        {
+                            Console.Write("\u001b[93m[WARNING]\u001b[97m ");
+                        }
+                        else
+                        {
+                            Console.ForegroundColor = ConsoleColor.Yellow;
+                            Console.Write("[WARNING] ");
+                            Console.ForegroundColor = ConsoleColor.White;
+                        }
                     }
 
                     if (messagetype == "info")
                     {
-                        text = "\u001b[97m";
+                        if (releaseId >= 1511)
+                        {
+                            Console.Write("\u001b[97m");
+                        }
+                        else
+                        {
+                            Console.ForegroundColor = ConsoleColor.White;
+                        }
                     }
 
                     if (messagetype == "success")
                     {
-                        text = "\u001b[92m";
+                        if (releaseId >= 1511)
+                        {
+                            Console.Write("\u001b[92m");
+                        }
+                        else
+                        {
+                            Console.ForegroundColor = ConsoleColor.Green;
+                        }
                     }
 
-                    text += message;
-
-                    Console.WriteLine(text + "\u001b[97m");
+                    if (releaseId >= 1511)
+                    {
+                        Console.WriteLine(message + "\u001b[97m");
+                    }
+                    else
+                    {
+                        Console.WriteLine(message);
+                        Console.ResetColor();
+                    }
                 }
             }
 
