@@ -374,10 +374,18 @@
 
         private static byte[] PrependFile(byte[] file)
         {
+            // custom only
             // string appendText = "@import url(\"https://steamloopback.host/friends.custom.css\");\n";
+
+            // custom overrides original (!important tags not needed)
             string appendText = "@import url(\"https://steamloopback.host/friends.original.css\");\n@import url(\"https://steamloopback.host/friends.custom.css\");\n{";
 
+            // original overrides custom (!important tags needed, this is the original behavior)
+            // string appendText = "@import url(\"https://steamloopback.host/friends.custom.css\");\n@import url(\"https://steamloopback.host/friends.original.css\");\n{";
+
+            // load original from Steam CDN, not recommended because of infinite matching
             // string appendText = "@import url(\"https://steamcommunity-a.akamaihd.net/public/css/webui/friends.css\");\n@import url(\"https://steamloopback.host/friends.custom.css\");\n";
+
             byte[] append = Encoding.ASCII.GetBytes(appendText);
 
             byte[] output = append.Concat(file).Concat(Encoding.ASCII.GetBytes("}")).ToArray();
