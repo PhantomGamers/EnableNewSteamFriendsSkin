@@ -434,7 +434,6 @@
                         return;
                     }
 
-                    string text = string.Empty;
                     if (messagetype == "error")
                     {
                         if (releaseId >= 1511)
