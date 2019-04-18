@@ -607,30 +607,22 @@
                 }
 
                 bool validresponse = false;
+                ConsoleKeyInfo keyInfo;
+                Println("friends.css location not found, would you like to clear your Steam cache and try again? Y/n", "error");
+                if (Process.GetProcessesByName("Steam").Length > 0 && Directory.Exists(steamDir))
+                {
+                    Println("(Steam will be restarted automatically.)", "warning");
+                }
+
                 while (!validresponse)
                 {
-                    Println("friends.css location not found, would you like to clear your Steam cache and try again? Y/n", "error");
-                    if (Process.GetProcessesByName("Steam").Length > 0 && Directory.Exists(steamDir))
-                    {
-                        Println("(Steam will be restarted automatically.)", "warning");
-                    }
+                    Console.Write("> ");
 
-                    if (!Silent)
-                    {
-                        Console.Write("\u001b[97m> ");
-                    }
-
-                    var cki = Console.ReadKey();
-                    var keypressed = cki.KeyChar.ToString().ToLower();
+                    keyInfo = Console.ReadKey();
                     Println();
-                    if (keypressed == "n")
-                    {
-                        validresponse = true;
-                        Println("Could not find friends.css", "error");
-                        Println("If Steam is not already patched please clear your Steam cache and try again or contact the developer.", "error");
-                        PromptForExit();
-                    }
-                    else
+
+                    var keyPressed = keyInfo.KeyChar.ToString().ToLower();
+                    if (keyPressed[0] == 'y' || keyInfo.Key == ConsoleKey.Enter)
                     {
                         validresponse = true;
                         if (Process.GetProcessesByName("Steam").Length > 0 && Directory.Exists(steamDir))
@@ -673,6 +665,18 @@
                         }
 
                         FindCacheFile();
+                    }
+                    else if (keyPressed[0] == 'n')
+                    {
+                        validresponse = true;
+                        Println("Could not find friends.css", "error");
+                        Println("If Steam is not already patched please clear your Steam cache and try again or contact the developer.", "error");
+                        PromptForExit();
+                    }
+                    else
+                    {
+                        Println("Invalid input. Please press y for yes or n for no.", "error");
+                        continue;
                     }
                 }
             }
