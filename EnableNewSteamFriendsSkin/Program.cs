@@ -385,7 +385,6 @@
 
             // load original from Steam CDN, not recommended because of infinite matching
             // string appendText = "@import url(\"https://steamcommunity-a.akamaihd.net/public/css/webui/friends.css\");\n@import url(\"https://steamloopback.host/friends.custom.css\");\n";
-
             byte[] append = Encoding.ASCII.GetBytes(appendText);
 
             byte[] output = append.Concat(file).Concat(Encoding.ASCII.GetBytes("}")).ToArray();
@@ -443,7 +442,7 @@
 
                     if (messagetype == "warning")
                     {
-                        text = "\u001b[43m[WARNING] \u001b[97m";
+                        text = "\u001b[93m[WARNING] \u001b[97m";
                     }
 
                     if (messagetype == "info")
@@ -575,6 +574,10 @@
                 while (!validresponse)
                 {
                     Println("friends.css location not found, would you like to clear your Steam cache and try again? Y/n", "error");
+                    if (Process.GetProcessesByName("Steam").Length > 0 && Directory.Exists(steamDir))
+                    {
+                        Println("(Steam will be restarted automatically.)", "warning");
+                    }
 
                     if (!Silent)
                     {
