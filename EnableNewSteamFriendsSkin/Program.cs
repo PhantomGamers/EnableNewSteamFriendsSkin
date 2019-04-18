@@ -108,6 +108,11 @@
                 Println("If your language is english this would be -sl=\"english\"", "warning");
             }
 
+            if (string.IsNullOrEmpty(FriendsString))
+            {
+                Println("Steam translation string not found, checking for friends class name only.", "warning");
+            }
+
             checkForUpdate.Start();
 
             StartAndWaitForSteam();
@@ -326,10 +331,6 @@
                 Process.Start(steamDir + "\\Steam.exe", steamargs);
                 Println("Waiting for friends list to open...");
                 Println("If friends list does not open automatically, please open manually.");
-                if (string.IsNullOrEmpty(FriendsString))
-                {
-                    Println("Steam translation file not found, checking for friends class name only.", "warning");
-                }
 
                 Stopwatch stopwatch = Stopwatch.StartNew();
                 while (!FindFriendsWindow() && stopwatch.Elapsed.Seconds < Timeout)
