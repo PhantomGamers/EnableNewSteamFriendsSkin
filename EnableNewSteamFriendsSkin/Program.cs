@@ -122,7 +122,6 @@
 
         private static byte[] GetLatestFriendsCSS()
         {
-            Uri latestURI = new Uri("https://google.com/");
             WebClient wc = new WebClient();
             ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls | SecurityProtocolType.Tls11 | SecurityProtocolType.Tls12;
 
@@ -509,7 +508,7 @@
             decompressedcachefile = PrependFile(decompressedcachefile);
 
             Println("Recompressing friends.css...");
-            using (FileStream file = new FileStream(friendscachefile, FileMode.Create))
+            using (FileStream file = new FileStream(friendscachefile, FileMode.Create, FileAccess.Write, FileShare.ReadWrite))
             using (GZipStream gzip = new GZipStream(file, Ionic.Zlib.CompressionMode.Compress, Ionic.Zlib.CompressionLevel.Level7))
             {
                 Println("Overwriting original friends.css...");
@@ -584,20 +583,27 @@
             Println("Checking cache files for match...");
             Parallel.ForEach(validFiles, (s, state) =>
             {
-                byte[] cachefile = File.ReadAllBytes(s);
+                byte[] cachefile;
+
+
+                using (FileStream f = new FileStream(s, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+                {
+                    cachefile = new byte[f.Length];
+                    f.Read(cachefile, 0, cachefile.Length);
+                }
 
                 if (IsGZipHeader(cachefile))
-                {
-                    byte[] decompressedcachefile = Decompress(cachefile);
-                    if (decompressedcachefile.Length == originalcss.Length && ByteArrayCompare(decompressedcachefile, originalcss))
                     {
-                        state.Stop();
-                        Println("Success! Matching friends.css found at " + s, "success");
-                        File.WriteAllBytes(steamDir + "\\clientui\\friends.original.css", Encoding.ASCII.GetBytes("/*" + etag + "*/\n").Concat(decompressedcachefile).ToArray());
-                        friendscachefile = s;
-                        PatchCacheFile(friendscachefile, decompressedcachefile);
+                        byte[] decompressedcachefile = Decompress(cachefile);
+                        if (decompressedcachefile.Length == originalcss.Length && ByteArrayCompare(decompressedcachefile, originalcss))
+                        {
+                            state.Stop();
+                            Println("Success! Matching friends.css found at " + s, "success");
+                            File.WriteAllBytes(steamDir + "\\clientui\\friends.original.css", Encoding.ASCII.GetBytes("/*" + etag + "*/\n").Concat(decompressedcachefile).ToArray());
+                            friendscachefile = s;
+                            PatchCacheFile(friendscachefile, decompressedcachefile);
+                        }
                     }
-                }
             });
 
             if (string.IsNullOrEmpty(friendscachefile))
