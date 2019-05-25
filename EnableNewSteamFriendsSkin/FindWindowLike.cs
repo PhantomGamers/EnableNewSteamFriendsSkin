@@ -5,7 +5,7 @@
     using System.Text;
 
     /// <summary>
-    /// Window Finding Utilities
+    /// Window Finding Utilities.
     /// </summary>
     internal class FindWindowLike
     {
@@ -14,12 +14,12 @@
         private const int GWCHILD = 5;
 
         /// <summary>
-        /// Find all windows matching a given title and class
+        /// Find all windows matching a given title and class.
         /// </summary>
-        /// <param name="hwndStart">Beginning hwnd to start searching at</param>
-        /// <param name="findText">Window title to search</param>
-        /// <param name="findClassName">Class name to search</param>
-        /// <returns>Returns an array of windows that matches the given arguments</returns>
+        /// <param name="hwndStart">Beginning hwnd to start searching at.</param>
+        /// <param name="findText">Window title to search.</param>
+        /// <param name="findClassName">Class name to search.</param>
+        /// <returns>Returns an array of windows that matches the given arguments.</returns>
         public static Window[] Find(int hwndStart, string findText, string findClassName)
         {
             ArrayList windows = DoSearch(hwndStart, findText, findClassName);
@@ -65,7 +65,7 @@
                     {
                         Title = windowText,
                         Class = className,
-                        Handle = hwnd
+                        Handle = hwnd,
                     };
 
                     list.Add(currentWindow);
@@ -98,22 +98,22 @@
           int hWnd, [Out] StringBuilder lpString, int nMaxCount);
 
         /// <summary>
-        /// Window Parameters
+        /// Window Parameters.
         /// </summary>
         internal class Window
         {
             /// <summary>
-            /// Gets or sets window title
+            /// Gets or sets window title.
             /// </summary>
             internal string Title { get; set; }
 
             /// <summary>
-            /// Gets or sets class name
+            /// Gets or sets class name.
             /// </summary>
             internal string Class { get; set; }
 
             /// <summary>
-            /// Gets or sets handle
+            /// Gets or sets handle.
             /// </summary>
             internal int Handle { get; set; }
         }

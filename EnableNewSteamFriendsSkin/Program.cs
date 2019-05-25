@@ -17,7 +17,7 @@
     using GZipStream = Ionic.Zlib.GZipStream;
 
     /// <summary>
-    /// Main class for finding and patching friends.css
+    /// Main class for finding and patching friends.css.
     /// </summary>
     internal class Program : Util
     {
@@ -55,7 +55,7 @@
         private static string etag = null;
 
         /// <summary>
-        /// Gets or sets a value indicating whether not the program should display a window
+        /// Gets or sets a value indicating whether not the program should display a window.
         /// </summary>
         internal static bool Silent { get; set; } = false;
 
@@ -535,7 +535,7 @@
         }
 
         /// <summary>
-        /// Main function to find cache file
+        /// Main function to find cache file.
         /// </summary>
         private static void FindCacheFile()
         {
@@ -584,7 +584,6 @@
             Parallel.ForEach(validFiles, (s, state) =>
             {
                 byte[] cachefile;
-
 
                 using (FileStream f = new FileStream(s, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
                 {

@@ -11,7 +11,7 @@
     using GZipStream = Ionic.Zlib.GZipStream;
 
     /// <summary>
-    /// General utility functions
+    /// General utility functions.
     /// </summary>
     internal class Util
     {
@@ -32,8 +32,8 @@
         /// <summary>
         /// Checks the first two bytes in a GZIP file, which must be 31 and 139.
         /// </summary>
-        /// <param name="arr">The byte array to check</param>
-        /// <returns>Whether or not the byte array contains a GZip Header</returns>
+        /// <param name="arr">The byte array to check.</param>
+        /// <returns>Whether or not the byte array contains a GZip Header.</returns>
         internal static bool IsGZipHeader(byte[] arr)
         {
             return arr.Length >= 2 &&
@@ -44,8 +44,8 @@
         /// <summary>
         /// Decompresses byte array to new byte array.
         /// </summary>
-        /// <param name="gzip">Gzipped byte array to decompress</param>
-        /// <returns>Returns a decompressed byte array</returns>
+        /// <param name="gzip">Gzipped byte array to decompress.</param>
+        /// <returns>Returns a decompressed byte array.</returns>
         internal static byte[] Decompress(byte[] gzip)
         {
             // Create a GZIP stream with decompression mode.
@@ -74,7 +74,7 @@
         }
 
         /// <summary>
-        /// Creates a console window
+        /// Creates a console window.
         /// </summary>
         internal static void CreateConsole()
         {
@@ -93,7 +93,7 @@
                     FileStream fileStream = new FileStream(safeFileHandle, FileAccess.Write);
                     StreamWriter standardOutput = new StreamWriter(fileStream)
                     {
-                        AutoFlush = true
+                        AutoFlush = true,
                     };
                     Version ver = Assembly.GetEntryAssembly().GetName().Version;
                     Console.Title = $"Steam Friends Skin Patcher v{ver.Major}.{ver.Minor}{(ver.Build > 0 ? ("." + ver.Build) : string.Empty)}";
@@ -117,9 +117,9 @@
         /// <summary>
         /// Compares two byte arrays for a match.
         /// </summary>
-        /// <param name="b1">First byte array</param>
-        /// <param name="b2">Second byte array</param>
-        /// <returns>Returns whether or not the two arrays match</returns>
+        /// <param name="b1">First byte array.</param>
+        /// <param name="b2">Second byte array.</param>
+        /// <returns>Returns whether or not the two arrays match.</returns>
         internal static bool ByteArrayCompare(byte[] b1, byte[] b2)
         {
             // Validate buffers are the same length.
@@ -128,9 +128,9 @@
         }
 
         /// <summary>
-        /// Determines whether this is the only instance of the program running
+        /// Determines whether this is the only instance of the program running.
         /// </summary>
-        /// <returns>Returns whether or not this is the only instance of the program running</returns>
+        /// <returns>Returns whether or not this is the only instance of the program running.</returns>
         internal static bool IsSingleInstance()
         {
             try
