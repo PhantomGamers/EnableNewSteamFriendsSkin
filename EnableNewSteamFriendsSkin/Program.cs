@@ -509,7 +509,7 @@
 
             Println("Recompressing friends.css...");
             using (FileStream file = new FileStream(friendscachefile, FileMode.Create, FileAccess.Write, FileShare.ReadWrite))
-            using (GZipStream gzip = new GZipStream(file, Ionic.Zlib.CompressionMode.Compress, Ionic.Zlib.CompressionLevel.Level7))
+            using (GZipStream gzip = new GZipStream(file, Ionic.Zlib.CompressionMode.Compress, Ionic.Zlib.CompressionLevel.Default))
             {
                 Println("Overwriting original friends.css...");
                 gzip.Write(decompressedcachefile, 0, decompressedcachefile.Length);
